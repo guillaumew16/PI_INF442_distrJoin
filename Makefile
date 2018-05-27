@@ -1,17 +1,20 @@
+#CC = g++
 CC = g++ -std=c++11
 
-all: testRelation
+all: test
 
-testRelation: relation.o testRelation.o
-	$(CC) relation.o testRelation.o -o testRelation
+test: relation.o permutation.o test.o
+	$(CC) relation.o permutation.o test.o -o test
 
-testRelation.o: testRelation.cpp relation.cpp
-	$(CC) -c testRelation.cpp
+test.o: test.cpp
+	$(CC) -c test.cpp
 
 relation.o: relation.cpp relation.hpp
 	$(CC) -c relation.cpp
 
+permutation.o: permutation.cpp permutation.hpp
+	$(CC) -c permutation.cpp
+
 clean:
 	rm -f *.o
-	rm testRelation
-
+	rm test
