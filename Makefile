@@ -1,5 +1,5 @@
 #CC = g++
-CC = g++ -std=c++11
+CC = g++ -std=c++11 -g #-std=c++11: for lambda functions; -g: for debugging with gdb
 
 all: test
 

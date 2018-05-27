@@ -15,6 +15,8 @@ public:
 
 	void addEntry(vector<unsigned int> newEntry);
 	vector<vector<unsigned int> > getEntries() const; //read-only
+	vector<vector<unsigned int> >::iterator getBegin(); //can't force read-only due to nature of vector::iterator :(
+	vector<vector<unsigned int> >::iterator getEnd();
 	int getArity() const; //read-only
 	
 	void head(int nl); //print out first nl entries, or all entries if nl<0
@@ -31,7 +33,11 @@ private:
 bool lexicoCompare(vector<unsigned int> e1, vector<unsigned int> e2); //return "e1 < e2"
 
 Relation join(Relation rel, vector<int> z, Relation relp, vector<int> zp);
-bool coincide(vector<unsigned int> t, vector<int> z, vector<unsigned int> tp, vector<int> zp, vector<int> &x); //auxiliary function for join
+//auxiliary functions for join:
+vector<unsigned int> pi_x(vector<unsigned int> t, Permutation permut, int c);
+bool coincide(vector<unsigned int> t, Permutation permut, vector<unsigned int> tp, Permutation permutp, int c);
+bool agree(vector<unsigned int> s, vector<unsigned int> t, Permutation permut, int c);
+vector<unsigned int> mergeEntry(vector<unsigned int> t, Permutation permut, vector<unsigned int> tp, Permutation permutp, int c);
 
 void printVector(vector<int> v, const char *name); //for testing purposes
 void printVector(vector<unsigned int> v, const char *name);
