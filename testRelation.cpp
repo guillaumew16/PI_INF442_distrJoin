@@ -7,21 +7,16 @@ using namespace std;
 
 int main(int argc, char** argv) {
 	Relation myRel("data_head/twitter.dat");
+	Relation myRelp("data_head/facebook.dat");
 
-	cout << "before sort:" << endl;
-	myRel.head(10);
+	vector<int> z(2);
+	z[0]=1;
+	z[1]=3;
+	vector<int> zp(2);
+	zp[0]=3;
+	zp[1]=4;
 
-	vector<int> permutation(2);
-	permutation[0]=1;
-	permutation[1] = 0;
-	cout << "sorting..." << endl;
-	myRel.lexicoSort(permutation);
-
-	cout << "before sort:" << endl;
-	myRel.head(10);
-
-	cout << "writing to file..." << endl;
-	myRel.writeToFile("output.txt");
+	join(myRel, z, myRelp, zp);
 
 	return 0;
 }

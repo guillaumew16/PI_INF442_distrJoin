@@ -12,6 +12,6 @@ relation.o: relation.cpp relation.hpp
 	$(CC) -c relation.cpp
 
 clean:
-	rm testRelation
 	rm -f *.o
+	rm testRelation
 
