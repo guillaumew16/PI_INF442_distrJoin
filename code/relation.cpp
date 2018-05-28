@@ -255,31 +255,33 @@ Relation join(Relation rel, Relation relp) {
 	vector<vector<unsigned int> >::iterator t_it = rel.getBegin();
 	vector<vector<unsigned int> >::iterator tp_it = relp.getBegin();
 	
-	Relation output(rel.getArity() + relp.getArity()); //mergeEntry is just concatenate entries
+	int c = x.size(); //turns out it is very often used
+	//many auxiliary functions take parameters (t, permut, c), to allow extraction of variables in x from entry t
+	Relation output(rel.getArity() + relp.getArity() - c);
 
 	int n=0;
 	while (t_it != rel.getEnd() && tp_it != relp.getEnd()) {
 		n++;
 		cout << "|  | iteration " << n << ": ";
-		if (coincide(*t_it, permut, *tp_it, permutp, x.size())) { //this makes sense because x is ordered ;)
+		if (coincide(*t_it, permut, *tp_it, permutp, c)) {
  			//"t and tp coincide on x"
 			cout << "t and tp coincide on x" << endl;
 
 			//find where to stop (equivalent to a vector::end())
 			vector<vector<unsigned int> >::iterator s_it = t_it;
 			vector<vector<unsigned int> >::iterator sp_it = tp_it;
-			while (s_it!=rel.getEnd() && agree(*s_it, *t_it, permut, x.size())) {
+			while (s_it!=rel.getEnd() && agree(*s_it, *t_it, permut, c)) {
 				//"s and t agree on x"
 				s_it++;
 			}
-			while (sp_it!=relp.getEnd() && agree(*sp_it, *tp_it, permutp, x.size())) {
+			while (sp_it!=relp.getEnd() && agree(*sp_it, *tp_it, permutp, c)) {
 				sp_it++;
 			}
 			
 			//add matching entries by iterating over both relations
 			for (vector<vector<unsigned int> >::iterator it=t_it; it!=s_it; it++) {
 				for (vector<vector<unsigned int> >::iterator itp=tp_it; itp!=sp_it; itp++) {
-					output.addEntry(mergeEntry(*it, permut, *itp, permutp, x.size()));
+					output.addEntry(mergeEntry(*it, permut, *itp, permutp, c));
 					cout << "|  |  | nb of entries in output so far: " << output.getEntries().size() << endl;
 				}
 			}
