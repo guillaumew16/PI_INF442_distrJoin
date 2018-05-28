@@ -39,6 +39,8 @@ bool coincide(vector<unsigned int> t, Permutation permut, vector<unsigned int> t
 bool agree(vector<unsigned int> s, vector<unsigned int> t, Permutation permut, int c);
 vector<unsigned int> mergeEntry(vector<unsigned int> t, Permutation permut, vector<unsigned int> tp, Permutation permutp, int c);
 
+Relation triangle(Relation rel);
+
 void printVector(vector<int> v, const char *name); //for testing purposes
 void printVector(vector<unsigned int> v, const char *name);
 

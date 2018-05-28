@@ -2,8 +2,6 @@
 #include <fstream>
 #include <algorithm> // std::sort
 
-#include <unistd.h> //sleep
-
 #include "relation.hpp"
 //#include "permutation.hpp" <-- already done
 
@@ -379,6 +377,36 @@ vector<unsigned int> mergeEntry(vector<unsigned int> t, Permutation permut, vect
 		output[t.size() + i] = tp[i];
 	}
 	return output;
+}
+
+Relation triangle(Relation rel) {
+    cout << "Computing triangles of graph-relation..." << endl;
+    if (rel.getArity() != 2) {
+        cout << "| Error: input relation has arity != 2. Abort" << endl;
+    }
+    
+    //it doesn't matter that z[i] is not in range [0, 2] (we assume global indexation of variables v_j)
+	vector<int> z12(2);
+	z12[0]=1;
+	z12[1]=2;
+	vector<int> z23(2);
+	z23[0]=2;
+	z23[1]=3;
+    vector<int> zInterm(4);
+    zInterm[0]=1;
+    zInterm[1]=2;
+    zInterm[2]=2;
+    zInterm[3]=3;
+	vector<int> z13(2);
+	z13[0]=1;
+	z13[1]=3;
+
+    Relation intermRel = join(rel, z12, rel, z23);
+    intermRel.writeToFile("../output/triangle-intermediary.txt");
+    Relation triangle = join(intermRel, zInterm, rel, z13);
+    intermRel.writeToFile("../output/triangle-final.txt");
+
+    return triangle;
 }
 
 void printVector(vector<int> v, const char *name) {
