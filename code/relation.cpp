@@ -9,7 +9,7 @@ using namespace std;
 
 Relation::Relation(int r) {
 	this->r = r;
-	for (int i=0; i<r; i++) {
+	for (int i=0; i<r; i++) { //z defaults to identity
 		z[i] = i;
 	}
 }
@@ -18,11 +18,10 @@ Relation::Relation(const char *filename, int r) {
 	//"won't-fix" bug: 
 	//chez moi quand on donne un filename qui n'existe pas, le constructor de ifstream ne renvoie pas d'exception et on obtient une Relation vide.
 
-	cout << "Calling Relation's import from file constructor but it is not finished testing: must test support of arbitrary arities" << endl;
-	cout << "Importing relation from file " << filename << ", assuming it is in correct format and has specified arity (" << r << ")" << endl;
+	cout << "Importing relation from file " << filename << ", *assuming* it is in correct format and has specified arity (" << r << ")" << endl;
 
 	this->r = r;
-	for (int i=0; i<r; i++) {
+	for (int i=0; i<r; i++) { //z defaults to identity
 		z[i] = i;
 	}
 
@@ -59,9 +58,14 @@ int Relation::getArity() const {
 	return r;
 }
 
-
 vector<int> getVariables() const {
 	return z;
+}
+
+int getVariable(int i) const {
+	if (i >= r)
+		throw invalid_argument("tried to getVariable for an index >= r");
+	return z[i];
 }
 
 void setVariables(vector<int> newZ) {
@@ -114,7 +118,6 @@ void Relation::head(int nl) {
 
 void Relation::writeToFile(const char *filename)
 {
-	cout << "Calling Relation::writeToFile(...) but it is not finished testing: must test support of arbitrary arities" << endl;
 	cout << "Writing relation to file " << filename << endl;
 
 	ofstream file(filename);
@@ -156,19 +159,14 @@ bool lexicoCompare(vector<unsigned int> e1, vector<unsigned int> e2) {
 	return false;
 }
 
-Relation join(Relation rel, vector<int> z, Relation relp, vector<int> zp){
+Relation join(Relation rel, Relation relp) {
 
-	cout << "called join(...), but not finished testing" << endl;
+	cout << "called join(...), but not finished testing: must test after adding z (list of variables) as attribute of Relation" << endl;
 	cout << "Computing join..." << endl;
 
-	if (rel.getArity() != z.size())
-		throw invalid_argument("First relation (rel) has arity != size of first list of variables (z)");
-	if (relp.getArity() != zp.size())
-		throw invalid_argument("Second relation (relp) has arity != size of second list of variables (zp)");
-
-	//assuming there exists a global indexation of variables, v_j, z[i] is defined as: for given assignment a,
+	//NB: assuming there exists a global indexation of variables, v_z, rel.z[i] is defined as: for given assignment (of variables) a,
 	//rel.getEntries()[a][i] = a(v_{z[i]})
-	//idem for relp/zp. no assumption on order of z nor zp.
+	//in the comments for this function, we may note zp=relp.z
 
 	/*---------------------------------------------------------------------------*/
 	/***** get set of common variables and their representations in z and zp *****/
@@ -183,18 +181,22 @@ Relation join(Relation rel, vector<int> z, Relation relp, vector<int> zp){
 	permutVect.reserve(rel.getArity());
 	vector<int> permutpVect;
 	permutpVect.reserve(relp.getArity());
-	//we sill build permut and permutp s.t 
-	//x (ordered set) = (z_{permut[0]}, ..., z_{permut[c-1]}) and (zp_{permutp[0]}, ..., zp_{permutp[c-1]})
-
+	//NB: we will build permut and permutp s.t 
+	//x (ordered set) = (z[permut[0]], ..., z[permut[c-1]])
+	//                = (zp[permutp[0]], ..., zp[permutp[c-1]])
+	//in other words, if we permut.permute( entries of rel ), we obtain x's variables first:
+	//for an entry (before permutation)  (a(v_z0), a(v_z1), ....., a(v_z[r-1]))
+	//                    we will obtain (a(v_x0), ..., a(v_x[c-1]), .........)
+	//where a is the assignment (of variables) corresponding to the entry, and c=x.size()
 
 	//will be useful to fill the rest of permut and permutp
 	vector<bool> rest(rel.getArity(), true);
 	vector<bool> restp(relp.getArity(), true);
 
-	for (int i=0; i<z.size(); i++) {
-		for (int j=0; j<zp.size(); j++) {
-			if (z[i] == zp[j]){
-				x.push_back(z[i]);
+	for (int i=0; i<rel.getArity(); i++) {
+		for (int j=0; j<relp.getArity(); j++) {
+			if (rel.getVariable(i) == relp.getVariable(j)){ //z[i] == zp[j]
+				x.push_back(rel.getVariable(i));
 				permutVect.push_back(i);
 				permutpVect.push_back(j);
 				rest[i] = false;
@@ -203,6 +205,11 @@ Relation join(Relation rel, vector<int> z, Relation relp, vector<int> zp){
 			}
 		}
 	}
+	//"proof" of claim on permut: at the n-th time that z[i]==zp[j] was verified,
+	//x[n] = z[i]
+	//permut[n] = i
+	//and thus x[n] = z[permut[n]]
+	//(idem for relp/zp/permutp of course)
 
 	cout << "finished" << endl;
 	cout << "|  | filling the rest of permutVect and permutpVect... ";
@@ -242,6 +249,8 @@ Relation join(Relation rel, vector<int> z, Relation relp, vector<int> zp){
 	/*-----------------------------------------------------------------------*/
 	/***** iterate over both Relations and add tuples that coincide on x *****/
 	cout << "| iterating over both Relations and adding tuples that coincide on x..." << endl;
+
+	//TODO: begin work (for adapting code after putting z as attribute of rel) --v
 
 	vector<vector<unsigned int> >::iterator t_it = rel.getBegin();
 	vector<vector<unsigned int> >::iterator tp_it = relp.getBegin();

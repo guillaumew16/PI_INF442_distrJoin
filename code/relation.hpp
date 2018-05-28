@@ -16,6 +16,7 @@ public:
 	int getArity() const; //read-only
 
 	vector<int> getVariables() const; //read-only
+	int getVariable(int i) const; //read-only
 	void setVariables(vector<int> newZ);
 
 	vector<vector<unsigned int> > getEntries() const; //read-only
@@ -31,6 +32,8 @@ public:
 private:
 	int r; //arity
 	vector<int> z; //list of variables. defaults to identity, use setVariables(...) to modify
+	//assuming there exists a global indexation of variables, v_j, z[i] is defined as: for given assignment (of variables) a,
+	//rel.getEntries()[a][i] = a(v_{z[i]})
 	vector<vector<unsigned int> > entries; //guaranteed to hold entries of arity r by constructors and addEntry
 
 };
