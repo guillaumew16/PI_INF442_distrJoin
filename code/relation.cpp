@@ -33,7 +33,7 @@ Relation::Relation(const char *filename, int r) {
 			n = 0;
 		}
 	}
-		
+	
 	/* for record, the old code for binary relations only:
 	unsigned int a, b;
 	while (file >> a >> b) {
@@ -79,7 +79,12 @@ void Relation::head(int nl) {
 	int n=0;
 	for (vector<vector<unsigned int> >::iterator it=entries.begin(); it!=entries.end(); it++) {
 		n++;
-		cout << "entry #" << n << ": " << (*it)[0] <<" "<< (*it)[1] << endl;
+		cout << "entry #" << n << ": ";
+		for (int i=0; i < r-1; i++) {
+			cout << (*it)[i] << " ";
+		}
+		cout << (*it)[r-1] << endl;
+
 		if (n == nl) { //we print all entries if nl<0
 			return;
 		}
@@ -92,12 +97,13 @@ void Relation::writeToFile(const char *filename)
 	cout << "Writing relation to file " << filename << endl;
 
 	ofstream file(filename);
-	for (vector<vector<unsigned int>>::iterator it=entries.begin(); it!=entries.end(); it++) {
+	for (vector<vector<unsigned int> >::iterator it=entries.begin(); it!=entries.end(); it++) {
 		for (int i=0; i < r-1; i++) {
 			file << (*it)[i] << " ";
 		}
 		file << (*it)[r-1] << endl;
 	}
+
 	file.close();
 }
 

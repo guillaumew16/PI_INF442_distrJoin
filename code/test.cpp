@@ -7,16 +7,17 @@ using namespace std;
 
 int main(int argc, char** argv) {
 
-	//Relation twitterRel("../data/twitter.dat");
-	//Relation facebookRel("../data/facebook.dat");
-	//Relation dblpRel("data/dblp.dat");
+	//Relation twitterRel("../data/twitter.dat", 2);
+	//Relation facebookRel("../data/facebook.dat", 2);
+	//Relation dblpRel("data/dblp.dat", 2);
 
-	Relation twitterRel("../data_head/twitter.dat", 2);
-	//Relation facebookRel("../data_head/facebook.dat");
-	//Relation dblpRel("../data_head/dblp.dat");
+	//Relation twitterRel("../data_head/twitter.dat", 2);
+	//Relation facebookRel("../data_head/facebook.dat", 2);
+	//Relation dblpRel("../data_head/dblp.dat", 2);
 
-	twitterRel.head(20);
-	twitterRel.writeToFile("../output/copy.txt");
+	Relation customRel("../data_head/custom.dat", 5);
+	customRel.head(20);
+	customRel.writeToFile("../output/copy.txt");
 
 	/*
 	vector<int> permutVect(2);

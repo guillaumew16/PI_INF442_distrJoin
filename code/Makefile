@@ -16,5 +16,9 @@ permutation.o: permutation.cpp permutation.hpp
 	$(CC) -c permutation.cpp
 
 clean:
-	rm -f *.o
+	rm *.o
 	rm test
+	#rm ../output/*
+
+cleanout:
+	rm ../output/*
