@@ -7,13 +7,16 @@ using namespace std;
 
 int main(int argc, char** argv) {
 
-	Relation twitterRel("../data/twitter.dat");
-	Relation facebookRel("../data/facebook.dat");
+	//Relation twitterRel("../data/twitter.dat");
+	//Relation facebookRel("../data/facebook.dat");
 	//Relation dblpRel("data/dblp.dat");
 
-	//Relation twitterHRel("../data_head/twitter.dat");
-	//Relation facebookHRel("../data_head/facebook.dat");
-	//Relation dblpHRel("../data_head/dblp.dat");
+	Relation twitterRel("../data_head/twitter.dat", 2);
+	//Relation facebookRel("../data_head/facebook.dat");
+	//Relation dblpRel("../data_head/dblp.dat");
+
+	twitterRel.head(20);
+	twitterRel.writeToFile("../output/copy.txt");
 
 	/*
 	vector<int> permutVect(2);
@@ -23,9 +26,10 @@ int main(int argc, char** argv) {
 
 	twitterRel.lexicoSort(permutation);
 	twitterRel.head(20);
-	twitterRel.writeToFile("../output/lexicoSort-twitter.txt");
+	twitterRel.writeToFile("../output/lexicoSort.txt");
 	*/
 	
+	/*
 	vector<int> z(2);
 	z[0]=1;
 	z[1]=3;
@@ -35,6 +39,7 @@ int main(int argc, char** argv) {
 
 	Relation outRel = join(twitterRel, z, facebookRel, zp);
 	outRel.writeToFile("../output/outRel.txt");
+	*/
 	
 
 	return 0;

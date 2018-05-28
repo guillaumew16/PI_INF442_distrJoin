@@ -13,29 +13,45 @@ Relation::Relation(int r) {
 	this->r = r;
 }
 
-Relation::Relation(const char *filename) {
-	cout << "Importing relation from file " << filename << ", assuming it is in correct format and has arity 2." << endl;
-	cout << "To import a non-binary relation from a file, we will need to modify Relation's constructor." << endl;
+Relation::Relation(const char *filename, int r) {
+	cout << "Calling Relation's import from file constructor but it is not finished testing: must test support of arbitrary arities" << endl;
+	cout << "Importing relation from file " << filename << ", assuming it is in correct format and has specified arity (" << r << ")" << endl;
 
-	// assuming relation described in the file is binary
-	this->r = 2;
+	this->r = r;
 
 	ifstream file(filename);
+	unsigned int newValue = -1;
+	int n=0;
+	while (file >> newValue) {
+		if (n == 0) {
+			entries.push_back(vector<unsigned int>(r));
+		}
+		entries.back()[n] = newValue;
+
+		n++;
+		if (n == r) { //we could have used n%r instead, but file may be very long, so this is easier
+			n = 0;
+		}
+	}
+		
+	/* for record, the old code for binary relations only:
 	unsigned int a, b;
 	while (file >> a >> b) {
 		entries.push_back(vector<unsigned int>(2));
 		entries.back()[0] = a;
 		entries.back()[1] = b;
 	}
+	*/
+
 	file.close();
 }
 
 // Relation::~Relation() {} //use the default destructor, which (recursively) calls destructor on each member
 
 void Relation::addEntry(vector<unsigned int> newEntry) {
-	if (newEntry.size() != this->r) {
+	if (newEntry.size() != this->r)
 		throw invalid_argument("received newEntry of size != r");
-	}
+
 	entries.push_back(newEntry);
 }
 
@@ -72,9 +88,8 @@ void Relation::head(int nl) {
 
 void Relation::writeToFile(const char *filename)
 {
-	cout << "Calling Relation::writeToFile(...) but it is not finished testing: must test support of non-binary Relations" << endl;
-	cout << "Writing relation to file " << filename << ", assuming it has arity 2." << endl;
-	cout << "To export a non-binary relation to a file, we will need to modify Relation::writeToFile(...)." << endl;
+	cout << "Calling Relation::writeToFile(...) but it is not finished testing: must test support of arbitrary arities" << endl;
+	cout << "Writing relation to file " << filename << endl;
 
 	ofstream file(filename);
 	for (vector<vector<unsigned int>>::iterator it=entries.begin(); it!=entries.end(); it++) {

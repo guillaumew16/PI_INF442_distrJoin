@@ -10,7 +10,7 @@ class Relation {
 
 public:
 	Relation(int r); //empty Relation
-	Relation(const char *filename); //import from .dat
+	Relation(const char *filename, int r); //import from .dat
 	//~Relation(); <-- we use default destructor
 
 	void addEntry(vector<unsigned int> newEntry);
