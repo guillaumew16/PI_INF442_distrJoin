@@ -188,14 +188,14 @@ Relation join(Relation rel, vector<int> z, Relation relp, vector<int> zp){
 
 	cout << "finished" << endl;
 	
-	/**/
+	/*
 	//intermediary outputting for testing
 	rel.writeToFile("output/rel.txt");
 	relp.writeToFile("output/relp.txt");
 	printVector(x, "x");
 	printVector(permut.getPermut(), "permut");
 	printVector(permutp.getPermut(), "permutp");
-	/**/
+	*/
 
 	/*-----------------------------------------------------------------------*/
 	/***** iterate over both Relations and add tuples that coincide on x *****/
