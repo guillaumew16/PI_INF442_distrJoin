@@ -9,13 +9,22 @@ using namespace std;
 
 Relation::Relation(int r) {
 	this->r = r;
+	for (int i=0; i<r; i++) {
+		z[i] = i;
+	}
 }
 
 Relation::Relation(const char *filename, int r) {
+	//"won't-fix" bug: 
+	//chez moi quand on donne un filename qui n'existe pas, le constructor de ifstream ne renvoie pas d'exception et on obtient une Relation vide.
+
 	cout << "Calling Relation's import from file constructor but it is not finished testing: must test support of arbitrary arities" << endl;
 	cout << "Importing relation from file " << filename << ", assuming it is in correct format and has specified arity (" << r << ")" << endl;
 
 	this->r = r;
+	for (int i=0; i<r; i++) {
+		z[i] = i;
+	}
 
 	ifstream file(filename);
 	unsigned int newValue = -1;
@@ -46,11 +55,22 @@ Relation::Relation(const char *filename, int r) {
 
 // Relation::~Relation() {} //use the default destructor, which (recursively) calls destructor on each member
 
-void Relation::addEntry(vector<unsigned int> newEntry) {
-	if (newEntry.size() != this->r)
-		throw invalid_argument("received newEntry of size != r");
+int Relation::getArity() const {
+	return r;
+}
 
-	entries.push_back(newEntry);
+
+vector<int> getVariables() const {
+	return z;
+}
+
+void setVariables(vector<int> newZ) {
+	if (newZ.size() != this->r)
+		throw invalid_argument("tried to set z (list of variables) to a vector of size != r");
+
+	for (int i=0; i<r; i++) {
+		z[i] = newZ[i];
+	}
 }
 
 vector<vector<unsigned int>> Relation::getEntries() const {
@@ -65,8 +85,11 @@ vector<vector<unsigned int> >::iterator Relation::getEnd() {
 	return entries.end();
 }
 
-int Relation::getArity() const {
-	return r;
+void Relation::addEntry(vector<unsigned int> newEntry) {
+	if (newEntry.size() != this->r)
+		throw invalid_argument("received newEntry of size != r");
+
+	entries.push_back(newEntry);
 }
 
 void Relation::head(int nl) {
@@ -402,9 +425,8 @@ Relation triangle(Relation rel) {
 	z13[1]=3;
 
     Relation intermRel = join(rel, z12, rel, z23);
-    intermRel.writeToFile("../output/triangle-intermediary.txt");
+    //intermRel.writeToFile("../output/triangle-intermediary.txt");
     Relation triangle = join(intermRel, zInterm, rel, z13);
-    intermRel.writeToFile("../output/triangle-final.txt");
 
     return triangle;
 }

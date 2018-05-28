@@ -5,17 +5,34 @@
 using namespace std;
 
 int main(int argc, char** argv) {
-    cout << "Choose among: triangle" << endl;
     string cmd;
+    cout << "Choose among: triangle" << endl;
     cin >> cmd;
 
     //apparently using switch with strings is not recommended
-    if (cmd == "triangle") {
-        cout << "data file: ";
+    if (cmd == "join") {
+        string filePath1;
+        string filePath2;
+        cout << "data file for first relation: " << endl;
+        cin >> filePath1;
+        cout << "data file for second relation (or leave empty to use the first relation): " << endl;
+        cin >> filePath2;
+        if (filePath2 == "") {
+            filePath2 = filePath1;
+        }
+        Relation rel1(filePath1);
+        Relation rel2(filePath2);
+        Relation rel = join(rel1, rel2);
+        rel.writeToFile("../output/join.txt");
+
+    } else if (cmd == "triangle") {
         string filePath;
+        cout << "data file for graph-relation: (no verification that input is indeed a binary relation)" <<endl;
         cin >> filePath;
         Relation rel(filePath.c_str(), 2);
-        triangle(rel);
+        Relation triRel = triangle(rel);
+        triRel.writeToFile("../output/triangle.txt");
+
     } else {
         cout << "Unrecognized cmd. Abort" << endl;
     }

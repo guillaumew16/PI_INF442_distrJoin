@@ -13,11 +13,15 @@ public:
 	Relation(const char *filename, int r); //import from .dat
 	//~Relation(); <-- we use default destructor
 
-	void addEntry(vector<unsigned int> newEntry);
+	int getArity() const; //read-only
+
+	vector<int> getVariables() const; //read-only
+	void setVariables(vector<int> newZ);
+
 	vector<vector<unsigned int> > getEntries() const; //read-only
 	vector<vector<unsigned int> >::iterator getBegin(); //can't force read-only due to nature of vector::iterator :(
 	vector<vector<unsigned int> >::iterator getEnd();
-	int getArity() const; //read-only
+	void addEntry(vector<unsigned int> newEntry);
 	
 	void head(int nl); //print out first nl entries, or all entries if nl<0
 	void writeToFile(const char *filename);
@@ -26,6 +30,7 @@ public:
 
 private:
 	int r; //arity
+	vector<int> z; //list of variables. defaults to identity, use setVariables(...) to modify
 	vector<vector<unsigned int> > entries; //guaranteed to hold entries of arity r by constructors and addEntry
 
 };
