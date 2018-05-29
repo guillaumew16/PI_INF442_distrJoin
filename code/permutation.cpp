@@ -62,6 +62,17 @@ vector<unsigned int> Permutation::permute(vector<unsigned int> entry) const {
     return output;
 }
 
+vector<int> Permutation::permute(vector<int> vect) const {
+    if (this->r != vect.size())
+        throw invalid_argument("tried to permute a vector<int> with dimension != permutation's dimension");
+
+    vector<int> output(r);
+    for (int i=0; i<r; i++) {
+        output[i] = vect[permut[i]];
+    }
+    return output;
+}
+
 bool isPermutation(vector<int> candidate) {
 	vector<bool> check(candidate.size(), false);
 	for (int i=0; i<candidate.size(); i++) {

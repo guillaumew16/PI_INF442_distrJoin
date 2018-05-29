@@ -9,8 +9,9 @@ using namespace std;
 
 Relation::Relation(int r) {
 	this->r = r;
+	z.reserve(r);
 	for (int i=0; i<r; i++) { //z defaults to identity
-		z[i] = i;
+		z.push_back(i);
 	}
 }
 
@@ -20,9 +21,10 @@ Relation::Relation(const char *filename, int r) {
 
 	cout << "Importing relation from file " << filename << ", *assuming* it is in correct format and has specified arity (" << r << ")" << endl;
 
+	z.reserve(r);
 	this->r = r;
 	for (int i=0; i<r; i++) { //z defaults to identity
-		z[i] = i;
+		z.push_back(i);
 	}
 
 	ifstream file(filename);
@@ -52,23 +54,29 @@ Relation::Relation(const char *filename, int r) {
 	file.close();
 }
 
+Relation::Relation(const Relation &thatRel) {
+	this->r = thatRel.getArity();
+	this->z = thatRel.getVariables();
+	this->entries = thatRel.getEntries();
+}
+
 // Relation::~Relation() {} //use the default destructor, which (recursively) calls destructor on each member
 
 int Relation::getArity() const {
 	return r;
 }
 
-vector<int> getVariables() const {
+vector<int> Relation::getVariables() const {
 	return z;
 }
 
-int getVariable(int i) const {
+int Relation::getVariable(int i) const {
 	if (i >= r)
 		throw invalid_argument("tried to getVariable for an index >= r");
 	return z[i];
 }
 
-void setVariables(vector<int> newZ) {
+void Relation::setVariables(vector<int> newZ) {
 	if (newZ.size() != this->r)
 		throw invalid_argument("tried to set z (list of variables) to a vector of size != r");
 
@@ -79,6 +87,12 @@ void setVariables(vector<int> newZ) {
 
 vector<vector<unsigned int>> Relation::getEntries() const {
 	return entries;
+}
+
+vector<unsigned int> Relation::getEntry(int i) const {
+	if (i >= r)
+		throw invalid_argument("tried to getEntry for an index >= r");
+	return entries[i];
 }
 
 vector<vector<unsigned int> >::iterator Relation::getBegin() {
@@ -160,20 +174,17 @@ bool lexicoCompare(vector<unsigned int> e1, vector<unsigned int> e2) {
 	return false;
 }
 
-/*
-*
-*		WARNING : Doesn't test wether the permut array 's size is good or not
-*
-*/
-bool lexicoCompare(vector<unsigned int> e1, vector<unsigned int> e2, vector<int> permut) {
+bool lexicoCompare(vector<unsigned int> e1, vector<unsigned int> e2, vector<int> permutVect) {
 	if (e1.size() != e2.size())
 		throw invalid_argument("tried to compare entries of different dimensions");
+	if (permutVect.size() != e1.size())
+		throw invalid_argument("called lexicoCompare with a permutVect of dimension != dimension of entries to compare");
 
 	for (int i = 0; i<e1.size(); i++) {
-		if (e1[permut[i]] < e2[permut[i]]) {
+		if (e1[permutVect[i]] < e2[permutVect[i]]) {
 			return true;
 		}
-		else if (e1[permut[i]] > e2[permut[i]]) {
+		else if (e1[permutVect[i]] > e2[permutVect[i]]) {
 			return false;
 		}
 	}
@@ -181,7 +192,7 @@ bool lexicoCompare(vector<unsigned int> e1, vector<unsigned int> e2, vector<int>
 }
 
 Relation join(Relation rel, Relation relp) {
-
+	
 	cout << "called join(...), but not finished testing: must test after adding z (list of variables) as attribute of Relation" << endl;
 	cout << "Computing join..." << endl;
 
@@ -190,7 +201,7 @@ Relation join(Relation rel, Relation relp) {
 	//in the comments for this function, we may note zp=relp.z
 
 	/*---------------------------------------------------------------------------*/
-	/***** get set of common variables and their representations in z and zp *****/
+	/*---- get set of common variables and their representations in z and zp ----*/
 	cout << "| getting set of common variables (x, permut, permutp)..." << endl;
 	cout << "|  | building x and x.size() first values of permutVect and permutpVect... ";
 
@@ -289,7 +300,7 @@ Relation join(Relation rel, Relation relp) {
 	//we (arbitrarily) chose to set list of variables of join relation to be
 	//the permut.permuted rel.getVariables(), followed by the part of the permutp.permuted relp.getVariables() that is not in x
 	//i.e. (v_x0, ..., v_x{c-1}, [rest of variables of rel in permut'ed order], [rest of variables of relp in permutp'ed order])
-	//the way we set list of variables here must be consistent with how we do mergeEntry(...)!!
+	//NB: the way we set list of variables here must be consistent with how we do mergeEntry(...)!!
 
 	int n=0;
 	while (t_it != rel.getEnd() && tp_it != relp.getEnd()) {
@@ -417,7 +428,7 @@ bool agree(vector<unsigned int> s, vector<unsigned int> t, Permutation permut, i
 		throw invalid_argument("called agree(...) but permut has dimension != dimension of entries. Should not have happened...");
 
 	for (int i=0; i<c; i++) {
-		if (s[permut.getPermut(i)] != t[permut.getPermut(i) {
+		if (s[permut.getPermut(i)] != t[permut.getPermut(i)]) {
 			return false;
 		}
 	}
@@ -425,28 +436,47 @@ bool agree(vector<unsigned int> s, vector<unsigned int> t, Permutation permut, i
 }
 
 vector<unsigned int> mergeEntry(vector<unsigned int> t, Permutation permut, vector<unsigned int> tp, Permutation permutp, int c) {
-
-	//TODO: begin work on mergeEntry, to match our choice of list of variables for join(...)'s output --v
-	cout << "called mergeEntry, but not finished coding: must recode because we put z as Relation attribute" << endl;
+	cout << "called mergeEntry, but not finished testing: must retest because we put z as Relation attribute" << endl;
 
 	//merge t (from Relation rel) and tp (from Relation relp) into a single entry of join(rel,relp)
-	//here we simply concatenate the two entries
-	//(whereas normally we would try to avoid repeating common variables)
+	
+	//we (arbitrarily) chose to set list of variables of join relation to be
+	//the permut.permuted rel.getVariables(), followed by the part of the permutp.permuted relp.getVariables() that is not in x
+	//i.e. (v_x0, ..., v_x{c-1}, [rest of variables of rel in permut'ed order], [rest of variables of relp in permutp'ed order])
+	//NB: the way we do mergeEntry(...) must be consistent with how we set list of variables in join(...)!!
 
 	//sanity check that t and tp agree on the (ordered) set x of common variables
 	//where x (ordered set) is represented by (permut[0], ..., permut[c-1]) and (permutp[0], ..., permutp[c-1])
 	if (!coincide(t, permut, tp, permutp, c))
 		throw invalid_argument("tried to mergeEntry two entries which do not coincide on x");
 
-	//simply concatenate
-	vector<unsigned int> output(t.size() + tp.size());
+	vector<unsigned int> output;
+	output.reserve(t.size() + tp.size() - c);
+
+	//the variables in t
 	for (int i=0; i<t.size(); i++) {
-		output[i] = t[i];
+		output.push_back( t[permut.getPermut(i)] );
 	}
-	for (int i=0; i<tp.size(); i++) {
-		output[t.size() + i] = tp[i];
+	//{variables in tp} \ {variables in t}
+	for (int i=c; i<tp.size(); i++) {
+		output.push_back( tp[permutp.getPermut(i)] );
 	}
+
 	return output;
+}
+
+Relation autoJoin(Relation rel, vector<int> zp) {
+	//equivalent to
+	/*
+	Relation relp(rel);
+	relp.setVariables(zp);
+	return join(rel, relp);
+	*/
+
+	//extremely dirty hack. TODO: change this! copy and adapt code from join(...)
+	Relation relp(rel);
+	relp.setVariables(zp);
+	return join(rel, relp);
 }
 
 Relation triangle(Relation rel) {
@@ -462,18 +492,20 @@ Relation triangle(Relation rel) {
 	vector<int> z23(2);
 	z23[0]=2;
 	z23[1]=3;
-    vector<int> zInterm(4);
-    zInterm[0]=1;
-    zInterm[1]=2;
-    zInterm[2]=2;
-    zInterm[3]=3;
 	vector<int> z13(2);
 	z13[0]=1;
 	z13[1]=3;
+	vector<int> z123(3);
+	z123[0]=1;
+	z123[1]=2;
+	z123[2]=3;
 
-    Relation intermRel = join(rel, z12, rel, z23);
+	rel.setVariables(z12);
+    Relation intermRel = autoJoin(rel, z23);
     //intermRel.writeToFile("../output/triangle-intermediary.txt");
-    Relation triangle = join(intermRel, zInterm, rel, z13);
+	intermRel.setVariables(z123);
+	rel.setVariables(z13);
+    Relation triangle = join(intermRel, rel);
 
     return triangle;
 }

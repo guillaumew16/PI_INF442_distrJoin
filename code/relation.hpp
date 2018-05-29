@@ -11,6 +11,7 @@ class Relation {
 public:
 	Relation(int r); //empty Relation
 	Relation(const char *filename, int r); //import from .dat
+	Relation(const Relation &thatRel); //copy an existing Relation
 	//~Relation(); <-- we use default destructor
 
 	int getArity() const; //read-only
@@ -20,6 +21,7 @@ public:
 	void setVariables(vector<int> newZ);
 
 	vector<vector<unsigned int> > getEntries() const; //read-only
+	vector<unsigned int> getEntry(int i) const;
 	vector<vector<unsigned int> >::iterator getBegin(); //can't force read-only due to nature of vector::iterator :(
 	vector<vector<unsigned int> >::iterator getEnd();
 	void addEntry(vector<unsigned int> newEntry);
@@ -38,15 +40,17 @@ private:
 
 };
 
-bool lexicoCompare(vector<unsigned int> e1, vector<unsigned int> e2); //return "e1 < e2"
-bool lexicoCompare(vector<unsigned int> e1, vector<unsigned int> e2, vector<int> permut); //return "e1 < e2"
+bool lexicoCompare(vector<unsigned int> e1, vector<unsigned int> e2); //return "e1 < e2" (equivalent to lexicoCompare(e1, e2, Identity(e1.size())) )
+bool lexicoCompare(vector<unsigned int> e1, vector<unsigned int> e2, vector<int> permut); //return "e1 < e2" for variables order permutVect
 
-Relation join(Relation rel, vector<int> z, Relation relp, vector<int> zp);
+Relation join(Relation rel, Relation relp);
 //auxiliary functions for join:
 vector<unsigned int> pi_x(vector<unsigned int> t, Permutation permut, int c);
 bool coincide(vector<unsigned int> t, Permutation permut, vector<unsigned int> tp, Permutation permutp, int c);
 bool agree(vector<unsigned int> s, vector<unsigned int> t, Permutation permut, int c);
 vector<unsigned int> mergeEntry(vector<unsigned int> t, Permutation permut, vector<unsigned int> tp, Permutation permutp, int c);
+
+Relation autoJoin(Relation rel, vector<int> zp); //equivalent to join(rel with given rel.z, rel with rel.z=zp)
 
 Relation triangle(Relation rel);
 

@@ -21,6 +21,7 @@ public:
     Permutation inverse();
 
     vector<unsigned int> permute(vector<unsigned int> entry) const;
+    vector<int> permute(vector<int> entry) const;
 
 private:
 	int r; //dimension
