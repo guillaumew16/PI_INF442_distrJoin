@@ -18,18 +18,19 @@ public:
 
 	vector<int> getVariables() const; //read-only
 	int getVariable(int i) const; //read-only
-	void setVariables(vector<int> newZ);
+	void setVariables(vector<int> &newZ);
 
 	vector<vector<unsigned int> > getEntries() const; //read-only
 	vector<unsigned int> getEntry(int i) const;
 	vector<vector<unsigned int> >::iterator getBegin(); //can't force read-only due to nature of vector::iterator :(
 	vector<vector<unsigned int> >::iterator getEnd();
-	void addEntry(vector<unsigned int> newEntry);
+	int getSize() const;
+	void addEntry(const vector<unsigned int> newEntry);
 	
 	void head(int nl); //print out first nl entries, or all entries if nl<0
 	void writeToFile(const char *filename);
 
-	void lexicoSort(Permutation permutation);
+	void lexicoSort(Permutation &permutation);
 
 private:
 	int r; //arity
@@ -40,19 +41,18 @@ private:
 
 };
 
-bool lexicoCompare(vector<unsigned int> e1, vector<unsigned int> e2); //return "e1 < e2" (equivalent to lexicoCompare(e1, e2, Identity(e1.size())) )
-bool lexicoCompare(vector<unsigned int> e1, vector<unsigned int> e2, vector<int> permut); //return "e1 < e2" for variables order permutVect
+bool lexicoCompare(const vector<unsigned int> &e1, const vector<unsigned int> &e2); //return "e1 < e2" (equivalent to lexicoCompare(e1, e2, Identity(e1.size())) )
+bool lexicoCompare(const vector<unsigned int> &e1, const vector<unsigned int> &e2, vector<int> permut); //return "e1 < e2" for variables order permutVect
 
-Relation join(Relation rel, Relation relp);
+Relation join(Relation &rel, Relation &relp, bool verbose=false);
 //auxiliary functions for join:
-vector<unsigned int> pi_x(vector<unsigned int> t, Permutation permut, int c);
-bool coincide(vector<unsigned int> t, Permutation permut, vector<unsigned int> tp, Permutation permutp, int c);
-bool agree(vector<unsigned int> s, vector<unsigned int> t, Permutation permut, int c);
-vector<unsigned int> mergeEntry(vector<unsigned int> t, Permutation permut, vector<unsigned int> tp, Permutation permutp, int c);
+vector<unsigned int> pi_x(vector<unsigned int> &t, Permutation &permut, int c);
+bool coincide(vector<unsigned int> &t, Permutation &permut, vector<unsigned int> &tp, Permutation &permutp, int c);
+bool agree(vector<unsigned int> &s, vector<unsigned int> &t, Permutation &permut, int c);
+vector<unsigned int> mergeEntry(vector<unsigned int> &t, Permutation &permut, vector<unsigned int> &tp, Permutation &permutp, int c);
 
-Relation autoJoin(Relation rel, vector<int> zp); //equivalent to join(rel with given rel.z, rel with rel.z=zp)
-
-Relation triangle(Relation rel);
+Relation autoJoin(Relation &rel, vector<int> &zp); //equivalent to join(rel with given rel.z, rel with rel.z=zp)
+Relation triangle(Relation &rel);
 
 void printVector(vector<int> v, const char *name); //for testing purposes
 void printVector(vector<unsigned int> v, const char *name);

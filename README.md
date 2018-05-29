@@ -16,10 +16,28 @@ Authors: Guillaume WANG & Pierre-Louis NORDMANN
 
 ### Utilisation
 
+#### Pour compiler :
 ```bash
 cd code
 make
+```
+
+#### Pour faire tourner :
+##### `main` des codes séquentiels : 
+```bash
 ./test
+# ou
+./demo
+```
+
+##### `main` des codes distribués avec MPI :
+```bash
+#mpirun -np nb_processeurs -host [noms des machines separes par ,] ./fichier/a/executer
+mpirun -np 3 -host allemagne,espagne,pologne MPItest #par exemple
+
+#avec SLURM :
+#salloc -n nb_processeurs --ntasks-per-node=nb_taches_par_proc mpirun ./fichier/a/executer
+salloc -n 6 --ntasks-per-node=2 mpirun MPItest #par exemple
 ```
 
 ### Remarques
@@ -29,6 +47,15 @@ On a choisi de mettre la donnée de "quelles variables sont stockées dans quell
 Cela évite d'avoir à passer la liste des variables à chaque opération où on a besoin de savoir à quoi renvoient les colonnes, typiquement pour join...
 
 L'inconvénient est que cela complique les opérations de join d'une table sur elle-même, car cela nécessite de connaître les données et les deux listes de variables. La solution naturelle est de faire une copie de la table, de changer la liste de variables de la copie, puis de join les deux tables (l'originale et la copie) ; mais cela suppose de copier toutes les entrées de la table... Alors que `join` renvoie lui-même une nouvelle Relation.
+
+### Données de test
+
+On a pris les données proposées par l'auteur du sujet à l'adresse indiquée dans le sujet :
+  2099732 dblp.dat
+   176468 facebook.dat
+  4841532 twitter.dat
+  7117732 total
+
 
 ### License
 

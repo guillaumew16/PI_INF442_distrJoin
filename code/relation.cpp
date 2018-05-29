@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm> // std::sort
+#include <stdexcept>
 
 #include "relation.hpp"
 //#include "permutation.hpp" <-- already done
@@ -21,8 +22,8 @@ Relation::Relation(const char *filename, int r) {
 
 	cout << "Importing relation from file " << filename << ", *assuming* it is in correct format and has specified arity (" << r << ")" << endl;
 
-	z.reserve(r);
 	this->r = r;
+	z.reserve(r);
 	for (int i=0; i<r; i++) { //z defaults to identity
 		z.push_back(i);
 	}
@@ -51,6 +52,7 @@ Relation::Relation(const char *filename, int r) {
 	}
 	*/
 
+	cout << "Finished importing" << endl;
 	file.close();
 }
 
@@ -76,13 +78,11 @@ int Relation::getVariable(int i) const {
 	return z[i];
 }
 
-void Relation::setVariables(vector<int> newZ) {
+void Relation::setVariables(vector<int> &newZ) {
 	if (newZ.size() != this->r)
 		throw invalid_argument("tried to set z (list of variables) to a vector of size != r");
 
-	for (int i=0; i<r; i++) {
-		z[i] = newZ[i];
-	}
+	this->z = newZ;
 }
 
 vector<vector<unsigned int>> Relation::getEntries() const {
@@ -103,11 +103,15 @@ vector<vector<unsigned int> >::iterator Relation::getEnd() {
 	return entries.end();
 }
 
-void Relation::addEntry(vector<unsigned int> newEntry) {
+int Relation::getSize() const {
+	return entries.size();
+}
+
+void Relation::addEntry(const vector<unsigned int> newEntry) {
 	if (newEntry.size() != this->r)
 		throw invalid_argument("received newEntry of size != r");
 
-	entries.push_back(newEntry);
+	entries.push_back(newEntry); //push_back creates a copy of the argument and stores the copy in the vector
 }
 
 void Relation::head(int nl) {
@@ -142,10 +146,11 @@ void Relation::writeToFile(const char *filename)
 		file << (*it)[r-1] << endl;
 	}
 
+	cout << "Finished writing to file" << endl;
 	file.close();
 }
 
-void Relation::lexicoSort(Permutation permut) {
+void Relation::lexicoSort(Permutation &permut) {
 	if (permut.getDimension() != this->r)
 		throw invalid_argument("received permutation of dimension != r");
 	
@@ -160,7 +165,9 @@ void Relation::lexicoSort(Permutation permut) {
 	}*/
 }
 
-bool lexicoCompare(vector<unsigned int> e1, vector<unsigned int> e2) {
+bool lexicoCompare(const vector<unsigned int> &e1, const vector<unsigned int> &e2) {
+	//equivalent to lexicoCompare(e1, e2, identity_permutation)
+
 	if (e1.size() != e2.size())
 		throw invalid_argument("tried to compare entries of different dimensions");
 	
@@ -174,7 +181,10 @@ bool lexicoCompare(vector<unsigned int> e1, vector<unsigned int> e2) {
 	return false;
 }
 
-bool lexicoCompare(vector<unsigned int> e1, vector<unsigned int> e2, vector<int> permutVect) {
+bool lexicoCompare(const vector<unsigned int> &e1, const vector<unsigned int> &e2, vector<int> permutVect) {
+	//can't pass permutVect as reference
+	//must pass by copy to guarantee the lambda function in lexicoSort(...) that permut_descriptor is const (see lexicoSort)
+
 	if (e1.size() != e2.size())
 		throw invalid_argument("tried to compare entries of different dimensions");
 	if (permutVect.size() != e1.size())
@@ -191,13 +201,13 @@ bool lexicoCompare(vector<unsigned int> e1, vector<unsigned int> e2, vector<int>
 	return false;
 }
 
-Relation join(Relation rel, Relation relp) {
+Relation join(Relation &rel, Relation &relp, bool verbose) { //parameter default: verbose=default
+	//the only side effect on rel and relp is calling lexicoSort, so we reorder the entries but underlying database is unchanged
 	
-	cout << "called join(...), but not finished testing: must test after adding z (list of variables) as attribute of Relation" << endl;
 	cout << "Computing join..." << endl;
 
 	//NB: assuming there exists a global indexation of variables, v_z, rel.z[i] is defined as: for given assignment (of variables) a,
-	//rel.getEntries()[a][i] = a(v_{z[i]})
+	//rel.getEntry(a)[i] = a(v_{z[i]})
 	//in the comments for this function, we may note zp=relp.z
 
 	/*---------------------------------------------------------------------------*/
@@ -264,7 +274,7 @@ Relation join(Relation rel, Relation relp) {
 	Permutation permut(permutVect);
 	Permutation permutp(permutpVect);
 
-	rel.lexicoSort(permut);
+	rel.lexicoSort(permut); //reorders entries, but underlying database is unchanged
 	relp.lexicoSort(permutp);
 
 	cout << "finished" << endl;
@@ -279,7 +289,7 @@ Relation join(Relation rel, Relation relp) {
 	*/
 
 	/*-----------------------------------------------------------------------*/
-	/***** iterate over both Relations and add tuples that coincide on x *****/
+	/*---- iterate over both Relations and add tuples that coincide on x ----*/
 	cout << "| iterating over both Relations and adding tuples that coincide on x..." << endl;
 
 	//TODO: begin work (for adapting code after putting z as attribute of rel) --v
@@ -305,10 +315,10 @@ Relation join(Relation rel, Relation relp) {
 	int n=0;
 	while (t_it != rel.getEnd() && tp_it != relp.getEnd()) {
 		n++;
-		cout << "|  | iteration " << n << ": ";
+		if (verbose) cout << "|  | iteration " << n << ": ";
 		if (coincide(*t_it, permut, *tp_it, permutp, c)) {
  			//"t and tp coincide on x"
-			cout << "t and tp coincide on x" << endl;
+			if (verbose) cout << "t and tp coincide on x" << endl;
 
 			//find where to stop (equivalent to a vector::end())
 			vector<vector<unsigned int> >::iterator s_it = t_it;
@@ -325,7 +335,7 @@ Relation join(Relation rel, Relation relp) {
 			for (vector<vector<unsigned int> >::iterator it=t_it; it!=s_it; it++) {
 				for (vector<vector<unsigned int> >::iterator itp=tp_it; itp!=sp_it; itp++) {
 					output.addEntry(mergeEntry(*it, permut, *itp, permutp, c));
-					cout << "|  |  | nb of entries in output so far: " << output.getEntries().size() << endl;
+					if (verbose) cout << "|  |  | nb of entries in output so far: " << output.getEntries().size() << endl;
 				}
 			}
 
@@ -336,7 +346,7 @@ Relation join(Relation rel, Relation relp) {
 		} else if ( lexicoCompare(pi_x(*t_it, permut, x.size()), pi_x(*tp_it, permutp, x.size())) ) {
 			//pi_x(t) < pi_x(tp) "pi_x(t) is lexicographically (strictly) smaller than pi_x(tp)"
 			//	"go to the next tuple t"
-			cout << "pi_x(t) < pi_x(tp). jump to the next tuple t" << endl;
+			if (verbose) cout << "pi_x(t) < pi_x(tp). jump to the next tuple t" << endl;
 
 			//small optimization: jump to the next entry t1 of rel s.t t does not agree with t1 on x
 			vector<vector<unsigned int> >::iterator s_it = t_it;
@@ -349,7 +359,7 @@ Relation join(Relation rel, Relation relp) {
 		} else {
 			//pi_x(t) > pi_x(tp)
 			//	"go to the next tuple tp"
-			cout << "pi_x(t) > pi_x(tp). jump to the next tuple tp" << endl;
+			if (verbose) cout << "pi_x(t) > pi_x(tp). jump to the next tuple tp" << endl;
 
 			vector<vector<unsigned int> >::iterator sp_it = tp_it;
 			while (sp_it!=relp.getEnd() && agree(*sp_it, *tp_it, permutp, x.size())) {
@@ -369,7 +379,7 @@ Relation join(Relation rel, Relation relp) {
 	return output;
 }
 
-vector<unsigned int> pi_x(vector<unsigned int> t, Permutation permut, int c) {
+vector<unsigned int> pi_x(vector<unsigned int> &t, Permutation &permut, int c) {
 	//if v_j is the global indexation, and x is the (ordered) set of variables on which to join,
 	//	c is cardinality of x
 	//	permut is the permutation s.t x = ( z_{permut[0]}, ..., z_{permut[c-1]} )
@@ -392,7 +402,7 @@ vector<unsigned int> pi_x(vector<unsigned int> t, Permutation permut, int c) {
 	return output;
 }
 
-bool coincide(vector<unsigned int> t, Permutation permut, vector<unsigned int> tp, Permutation permutp, int c) {
+bool coincide(vector<unsigned int> &t, Permutation &permut, vector<unsigned int> &tp, Permutation &permutp, int c) {
 	//"t and tp coincide on x"
 	//where x (ordered set) is represented by (permut[0], ..., permut[c-1]) and (permutp[0], ..., permutp[c-1])
 	//this is equivalent to (pi_x(t) >= pi_x(tp)) && (pi_x(tp) >= pi_x(t))
@@ -417,7 +427,7 @@ bool coincide(vector<unsigned int> t, Permutation permut, vector<unsigned int> t
 	return true;
 }
 
-bool agree(vector<unsigned int> s, vector<unsigned int> t, Permutation permut, int c) {
+bool agree(vector<unsigned int> &s, vector<unsigned int> &t, Permutation &permut, int c) {
 	//"entries s and t (both from Relation rel) agree on the variables { permut[0], ..., permut[c-1] } (= x)"
 
 	if (s.size() != t.size())
@@ -435,9 +445,7 @@ bool agree(vector<unsigned int> s, vector<unsigned int> t, Permutation permut, i
 	return true;
 }
 
-vector<unsigned int> mergeEntry(vector<unsigned int> t, Permutation permut, vector<unsigned int> tp, Permutation permutp, int c) {
-	cout << "called mergeEntry, but not finished testing: must retest because we put z as Relation attribute" << endl;
-
+vector<unsigned int> mergeEntry(vector<unsigned int> &t, Permutation &permut, vector<unsigned int> &tp, Permutation &permutp, int c) {
 	//merge t (from Relation rel) and tp (from Relation relp) into a single entry of join(rel,relp)
 	
 	//we (arbitrarily) chose to set list of variables of join relation to be
@@ -465,7 +473,7 @@ vector<unsigned int> mergeEntry(vector<unsigned int> t, Permutation permut, vect
 	return output;
 }
 
-Relation autoJoin(Relation rel, vector<int> zp) {
+Relation autoJoin(Relation &rel, vector<int> &zp) {
 	//equivalent to
 	/*
 	Relation relp(rel);
@@ -473,13 +481,18 @@ Relation autoJoin(Relation rel, vector<int> zp) {
 	return join(rel, relp);
 	*/
 
-	//extremely dirty hack. TODO: change this! copy and adapt code from join(...)
+	if (rel.getArity() != zp.size())
+		throw invalid_argument("called autoJoin for rel with zp, zp has size != arity of rel");
+
+	//looks like a dirty hack, but actually we do need two Relation objects in order to run join(...)
+	//because we need to iterate simultaneously over a permut-lexicoSorted Relation and a permutp-lexicoSorted Relation
+	//(unless we store the entry permutation for the permutp-sorted one... which we could have done)
 	Relation relp(rel);
 	relp.setVariables(zp);
 	return join(rel, relp);
 }
 
-Relation triangle(Relation rel) {
+Relation triangle(Relation &rel) {
     cout << "Computing triangles of graph-relation..." << endl;
     if (rel.getArity() != 2) {
         cout << "| Error: input relation has arity != 2. Abort" << endl;
