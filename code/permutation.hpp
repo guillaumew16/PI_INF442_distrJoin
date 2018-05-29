@@ -15,6 +15,7 @@ public:
     int operator[](int i); //try to avoid bugs by outputting a warning if trying to [] a Permutation instead of a vector<int>
 
 	vector<int> getPermut() const; //read-only
+	int getPermut(int i) const; //read-only
 	int getDimension() const; //read-only
 
     Permutation inverse();

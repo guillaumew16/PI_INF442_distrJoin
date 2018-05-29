@@ -251,6 +251,7 @@ Relation join(Relation rel, Relation relp) {
 	cout << "| iterating over both Relations and adding tuples that coincide on x..." << endl;
 
 	//TODO: begin work (for adapting code after putting z as attribute of rel) --v
+	//EDIT: to check, but I think this is ok. just need to modify mergeEntry(...), and re-check whole function
 
 	vector<vector<unsigned int> >::iterator t_it = rel.getBegin();
 	vector<vector<unsigned int> >::iterator tp_it = relp.getBegin();
@@ -258,6 +259,16 @@ Relation join(Relation rel, Relation relp) {
 	int c = x.size(); //turns out it is very often used
 	//many auxiliary functions take parameters (t, permut, c), to allow extraction of variables in x from entry t
 	Relation output(rel.getArity() + relp.getArity() - c);
+
+	vector<int> newZ = permut.permute(rel.getVariables());
+	for (int i=c; i<relp.getArity(); i++) {
+		newZ.push_back(relp.getVariable(permutp.getPermut(i)));
+	}
+	output.setVariables(newZ); 
+	//we (arbitrarily) chose to set list of variables of join relation to be
+	//the permut.permuted rel.getVariables(), followed by the part of the permutp.permuted relp.getVariables() that is not in x
+	//i.e. (v_x0, ..., v_x{c-1}, [rest of variables of rel in permut'ed order], [rest of variables of relp in permutp'ed order])
+	//the way we set list of variables here must be consistent with how we do mergeEntry(...)!!
 
 	int n=0;
 	while (t_it != rel.getEnd() && tp_it != relp.getEnd()) {
@@ -344,7 +355,7 @@ vector<unsigned int> pi_x(vector<unsigned int> t, Permutation permut, int c) {
 
 	vector<unsigned int> output(c);
 	for (int i=0; i<c; i++) {
-		output[i] = t[permut.getPermut()[i]];
+		output[i] = t[permut.getPermut(i)];
 	}
 	return output;
 }
@@ -355,14 +366,14 @@ bool coincide(vector<unsigned int> t, Permutation permut, vector<unsigned int> t
 	//this is equivalent to (pi_x(t) >= pi_x(tp)) && (pi_x(tp) >= pi_x(t))
 	// !lexicoCompare(pi_x(*t_it, permut, c), pi_x(*tp_it, permutp, c)) && !lexicoCompare(pi_x(*tp_it, permutp, c), pi_x(*t_it, permut, c))
 
+	//for testing purposes
 	//project on x
 	vector<unsigned int> t_proj = pi_x(t, permut, c);
 	vector<unsigned int> tp_proj = pi_x(tp, permutp, c);
+	bool shouldReturn = (!lexicoCompare(t_proj, tp_proj) ) && (!lexicoCompare(tp_proj, t_proj) );
 
-	bool shouldReturn = (!lexicoCompare(t_proj, tp_proj) ) && (!lexicoCompare(tp_proj, t_proj) ); //for testing purposes
-
-	for (int i=0; i<t_proj.size(); i++) {
-		if (t_proj[i] != tp_proj[i]) {
+	for (int i=0; i<c; i++) {
+		if (t[permut.getPermut(i)] != tp[permutp.getPermut(i)]) {
 			if (shouldReturn != false)
 				throw logic_error("coincide(t, permut, tp, permut, c)=false does not return expected value (pi_x(t) >= pi_x(tp)) && (pi_x(tp) >= pi_x(t)) =true");
 			return false;
@@ -385,7 +396,7 @@ bool agree(vector<unsigned int> s, vector<unsigned int> t, Permutation permut, i
 		throw invalid_argument("called agree(...) but permut has dimension != dimension of entries. Should not have happened...");
 
 	for (int i=0; i<c; i++) {
-		if (s[permut.getPermut()[i]] != t[permut.getPermut()[i]]) {
+		if (s[permut.getPermut(i)] != t[permut.getPermut(i) {
 			return false;
 		}
 	}
@@ -393,6 +404,10 @@ bool agree(vector<unsigned int> s, vector<unsigned int> t, Permutation permut, i
 }
 
 vector<unsigned int> mergeEntry(vector<unsigned int> t, Permutation permut, vector<unsigned int> tp, Permutation permutp, int c) {
+
+	//TODO: begin work on mergeEntry, to match our choice of list of variables for join(...)'s output --v
+	cout << "called mergeEntry, but not finished coding: must recode because we put z as Relation attribute" << endl;
+
 	//merge t (from Relation rel) and tp (from Relation relp) into a single entry of join(rel,relp)
 	//here we simply concatenate the two entries
 	//(whereas normally we would try to avoid repeating common variables)

@@ -1,0 +1,14 @@
+J'ai deux classes Conteneurs qui contiennent en gros un tableau 2D d'entiers :
+- une le représente sous la forme d'un vector<vector<int>>
+- l'autre vector<int> (mais plus large du coup)
+Je crée un tableau d'échantillon (vector<vector<int>> 10000*4), je construis les conteneurs à partir de ce tableau, puis ensuite j'incrémente tous les éléments
+Je chronomètre pour regarder la vitesse de recopiage, d'accès etc.
+Ca donne comme resultats :
+
+[resultats.png]
+
+Certes c'est pas folichon mais il y a quand même des différences.
+C'était pour voir si la mise en cache de la mémoire a vraiment un impact quand il y a beaucoup de données à traiter, et donc la réponse est oui possiblement. Typiquement, si on doit trier beaucoup d'éléments je pense que ça peut jouer.
+
+"ticks" ça correspond à des unités de temps :
+"The value returned is expressed in clock ticks, which are units of time of a constant but system-specific length (with a relation of CLOCKS_PER_SEC clock ticks per second)."

@@ -33,6 +33,12 @@ vector<int> Permutation::getPermut() const {
     return permut;
 }
 
+int Permutation::getPermut(int i) const {
+    if (i>=r)
+        throw invalid_argument("tried to getPermut of an index >= r");
+    return permut[i];
+}
+
 int Permutation::getDimension() const {
     return r;
 }
