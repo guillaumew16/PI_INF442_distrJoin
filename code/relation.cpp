@@ -135,8 +135,9 @@ void Relation::lexicoSort(Permutation permut) {
 	if (permut.getDimension() != this->r)
 		throw invalid_argument("received permutation of dimension != r");
 	
+	vector<int> permut_descriptor = permut.getPermut();
 	sort(entries.begin(), entries.end(), 
-		[permut](vector<unsigned int> const &a, vector<unsigned int> const &b) { return lexicoCompare(permut.permute(a), permut.permute(b)); });
+		[permut_descriptor](vector<unsigned int> const &a, vector<unsigned int> const &b) { return lexicoCompare(a, b, permut_descriptor); });
 
 	/*alternatively we could have done "radix sort" using stable_sort. slightly less efficient due to stable_sort I think
 	for (int i=0; i<r; i++){
@@ -153,6 +154,26 @@ bool lexicoCompare(vector<unsigned int> e1, vector<unsigned int> e2) {
 		if (e1[i] < e2[i]) {
 			return true;
 		} else if (e1[i] > e2[i]) {
+			return false;
+		}
+	}
+	return false;
+}
+
+/*
+*
+*		WARNING : Doesn't test wether the permut array 's size is good or not
+*
+*/
+bool lexicoCompare(vector<unsigned int> e1, vector<unsigned int> e2, vector<int> permut) {
+	if (e1.size() != e2.size())
+		throw invalid_argument("tried to compare entries of different dimensions");
+
+	for (int i = 0; i<e1.size(); i++) {
+		if (e1[permut[i]] < e2[permut[i]]) {
+			return true;
+		}
+		else if (e1[permut[i]] > e2[permut[i]]) {
 			return false;
 		}
 	}

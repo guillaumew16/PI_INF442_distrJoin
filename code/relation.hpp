@@ -39,6 +39,7 @@ private:
 };
 
 bool lexicoCompare(vector<unsigned int> e1, vector<unsigned int> e2); //return "e1 < e2"
+bool lexicoCompare(vector<unsigned int> e1, vector<unsigned int> e2, vector<int> permut); //return "e1 < e2"
 
 Relation join(Relation rel, vector<int> z, Relation relp, vector<int> zp);
 //auxiliary functions for join:
