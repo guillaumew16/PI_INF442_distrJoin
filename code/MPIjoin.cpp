@@ -2,187 +2,150 @@
 #include <stdexcept>
 #include <iostream>
 #include "mpi.h"
+#include <string>
 
 #include "MPIjoin.hpp"
 //#include "relation.hpp" <-- already done
 
 using namespace std;
 
-Relation MPIjoin(const char *filename, const char *filenamep, vector<int> z, vector<int> zp) {
+
+Relation MPIjoin(Relation &rel, Relation &relp) {
 	//we use MPI tags to signal processors the type of message they should expect: entry for rel or entry for relp
-	
+
 	//tags used:
 	//(unused) 31: number of rel entries to be received
 	//(unused) 32: number of relp entries to be received
-	//41: message contains a rel entry
-	//42: message contains a relp entry
-	//51: signals end of rel entries
-	//52: signals end of relp entries
-	//13: message contains an answer entry
-	//10: signals end of answer entries (from processor status.MPI_SOURCE)
+	//(unused) 41: message contains a rel entry
+	//(unused) 42: message contains a relp entry
+	//(unused) 50: signals end of rel and relp entries
+	//43: message contains an answer entry
+	//53: signals end of answer entries (from processor status.MPI_SOURCE)
 	//(unused) 20: signals end of MPIjoin (all answers have been received by root)
 
 	//main phases:
-	//- initialize stuff (only for root)
-	//- root Isends rel entries one by one to chosen processors, and each processor Recvs rel entries
-	//- once all rel entries have been sent/received, root Isends everyone a message with dummy content and tag 51 (signals end of rel entries)
-	//- root Isends relp entries one by one to chosen processors, and each processor Recv relp entries
-	//- once all relp entries have been sent/received, root Isends everyone a message with dummy content and tag 52 (signals end of relp entries)
+	//- initialize stuff and import relations (for all processors, thanks to nfs or something like that)
+	//- each processor determines which entries it should join
 	//- each processor joins received rel and relp entries
-	//- each processor Isends back result entries one by one, and Isends to root a message with dummy content and tag 10 (signals end of answer entries)
+	//- each processor Isends back result entries one by one, and Isends to root a dummy message with "signal end of answer entries" tag
 	//- root (once it has Isent its result entries and signal message to itself) Recvs from all processors answer entries and signal messages
 	//- root keeps track of which processor terminated and which did not (using status.MPI_SOURCE)
+	//- root simply concatenates answer entries and returns.
 
-	//we could not use Bcast to broadcast "signal end of rel/relp" because of the way MPI works: you don't Recv a Bcast, everyone has to call Bcast
-	//but what we need is a way to send the signal to the processors, even as they are ready to receive new entries
-
+	cout << "running 'normal' version of MPIjoin, but it was not tested at all!..." << endl;
 	cout << "Starting MPIjoin(...). We assume MPI was initialized by caller (MPI_Init(...))." << endl;
 
 	int rank, numtasks;
 	const int root = 0;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
-
-	//local variables
-	MPI_Status localRecvStatus;
-	Relation localRel(z.size());
-	Relation localRelp(zp.size());
 	
-	//root-specific variables
-	//use pointers because these need to be declared outside "if" to have correct scope, in the point of view of root processor
-	Relation *rel;
-	Relation *relp;
-	Relation *output;
-	MPI_Request sendentryReqs[];
-	MPI_Request sendentryReqsp[];
-	int *k, *kp, *c;	
+	vector<int> z = rel.getVariables(); //do a copy
+	vector<int> zp = relp.getVariables();
 
-	if (rank == root) {
-		/*----------------------------------------*/
-		/*---- setup variables needed by root ----*/
-		rel = new Relation(filename, z.size());
-		relp = new Relation(filenamep, zp.size());
-		rel->setVariables(z);
-		relp->setVariables(zp);
-
-		//define k, kp and c (declared outside "if")
-		*k = -1; //choose one variable v in the intersection of lists of variables, v = z[k] = zp[kp]
-		*c = 0; //number of common variables, to know what arity output will be
-		for (int i=0; i<z.size(); i++) {
-			for (int j=0; j<zp.size(); j++) {
-				if (z[i] == zp[j]) {
-					if (*k!=-1) { //if not already set
-						*k = i;
-						*kp = j;
-					}
-					(*c)++;
+	int k=-1, kp; //choose one variable v in the intersection of lists of variables, v = z[k] = zp[kp]
+	int c = 0; //number of common variables, to know what arity output will be
+	for (int i=0; i<z.size(); i++) {
+		for (int j=0; j<zp.size(); j++) {
+			if (z[i] == zp[j]) {
+				if (k == -1) { // k and kp have not yet been set
+					k = i;
+					kp = j;
 				}
+				c++;
 			}
 		}
+	}
+	int joinArity = z.size() + zp.size() - c;
+	Relation output(joinArity);
 
-		/*--------------------------*/
-		/*---- send rel entries ----*/
+	/*
+	if (rank == root) {
+		cout << "we determined z[k] = zp[kp] with k=" << k << " and kp=" << kp << endl;
+		cout << "z[k]: " << z[k] << "; zp[kp]: " << zp[kp] << endl;
+	}
+	*/
 
-		//Nonblocking calls allocate a communication request object and associate it with the request handle (the argument request).
-		//The request can be used later to query the status of the communication or wait for its completion. 
-		sendentryReqs = malloc(rel->getSize()); //C-style but no choice
-		int n=0;
-
-		for (vector<vector<unsigned int> >::iterator it=rel->getBegin(); it!=rel->getEnd(); it++) {
-			int m = (*it)[k] % numtasks;
-			unsigned int *toSend = rel->getEntries()[0]; //convert vector to array
-			MPI_Isend(toSend, rel->getArity(), MPI_UNSIGNED, m, 41, MPI_COMM_WORLD, &sendentryReqs[n]); //tag 41: data=entry for rel
-			n++;
+	/*----------------------------------------------------------*/
+	/*---- compute which entries this processor should join ----*/
+	Relation locRel(z.size());
+	for (vector<vector<unsigned int> >::iterator it=rel.getBegin(); it!=rel.getEnd(); it++) {
+		if ((*it)[k] % numtasks == rank) {
+			locRel.addEntry(*it);
 		}
 	}
+	locRel.setVariables(z);
+	Relation locRelp(zp.size());
+	for (vector<vector<unsigned int> >::iterator it=relp.getBegin(); it!=relp.getEnd(); it++) {
+		if ((*it)[kp] % numtasks == rank) {
+			locRelp.addEntry(*it);
+		}
+	}
+	locRelp.setVariables(zp);
 
-	/*--------------------------*/
-	/*---- recv rel entries ----*/
+	/*----------------------------*/
+	/*---- compute local join ----*/
+	Relation localJoin = join(locRel, locRelp, 0); //0 for non-verbose
 
-	//this is blocking for root!!
-	
-	localRecvStatus.MPI_TAG = 1;
-
-	while (status.MPI_TAG != 51) { //tag 51: "signal end of rel entries"
-		vector<unsigned int> recvEntry(z.size());
-		//standard-mode blocking receive
-		MPI_Recv(&recvEntry[0], z.size(), MPI_UNSIGNED, partner, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-
-
+	if (localJoin.getArity() != joinArity) {
+		//cout << "Detected logic error on machine " << rank << ":" << endl;
+		//cout << "| locally computed join localJoin.getArity() = " << localJoin.getArity() << endl;
+		//cout << "| previously computed joinArity = " << joinArity << endl;
+		throw logic_error("after computing localJoin, we find that localJoin.getArity() != z.size() + zp.size() - c");
 	}
 
+	//cout << "from machine "<<rank << ": locaJoin has arity " << localJoin.getArity() << ", and size " << localJoin.getSize() << endl;
 
+	/*-------------------------------------*/
+	/*---- send back localJoin entries ----*/
+	MPI_Request locSendentryReqs[localJoin.getSize()];
+	int n = 0;
+	for (vector<vector<unsigned int> >::iterator it = localJoin.getBegin(); it != localJoin.getEnd(); it++) {
+		//cout << "from machine "<<rank << ": sending an answer entry" << endl;
+		int m = (*it)[k] % numtasks;
+		unsigned int *toSend = &(*it)[0];
+		//blocking send to make sure all entries are sent before sending "end of answer entries" signal
+		MPI_Send(toSend, localJoin.getArity(), MPI_UNSIGNED, root, 43, MPI_COMM_WORLD /*, &locSendentryReqs[n]*/); //tag 41: "data=answer entry"
+		n++;
+	}
+
+	/*-------------------------------------------------------------------*/
+	/*---- send back dummy message to signal "end of answer entries" ----*/
+	MPI_Request locSignalReq;
+	vector<unsigned int> dummyVector(z.size(), 1); //define a well-defined dummy vector to avoid segfaults and the like
+	MPI_Isend(&dummyVector[0], 1, MPI_UNSIGNED, root, 53, MPI_COMM_WORLD, &locSignalReq); //tag 53: "signal end of answer entries"
+
+	//cout<<"from machine " << rank << ": finished Isending localJoin entries, as well as signal \"end of answer entries\"." << endl;
+
+	//work of non-root processors ends here.
 
 	if (rank == root) {
-		//wait to make sure every processor receives signal "end for rel" in correct order
-		MPI_Waitall(rel->getSize(), sendentryReqs, MPI_STATUSES_IGNORE);
+		/*------------------------------------------------*/
+		/*---- receive and concatenate answer entries ----*/
 
-		vector<unsigned int> dummyVector(z.size(), 42); //define a well-defined dummy vector to avoid segfaults and the like
-		MPI_Request sendsignalReqs[numtasks];
+		MPI_Status status;
 		for (int m=0; m<numtasks; m++) {
-			MPI_Isend(dummyVector, z.size(), MPI_UNSIGNED, m, 51, MPI_COMM_WORLD, &sendsignalReqs[m]); //5th arg = "signal end for rel" tag
+			while (status.MPI_TAG != 53) { //tag 53: "signal end of answer entries"
+				vector<unsigned int> recvEntry(joinArity);
+				//blocking receive, so that we continue only when all non-root processors sent "end of answer entries" tag
+				MPI_Recv(&recvEntry[0], joinArity, MPI_UNSIGNED, m, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+				if (status.MPI_TAG == 43) { //tag 43: "data=answer entry"
+					output.addEntry(recvEntry);
+					//printVector(recvEntry, "received answer entry");
+					//cout << "root received answer entry from " << m << endl;
+				} else if (status.MPI_TAG != 53) {
+					string errMsg = "root received a message with tag " + to_string(status.MPI_TAG) + ", while excepting answer entries (tag 43 or 53)";
+					printVector(recvEntry, errMsg.c_str());
+					throw logic_error(errMsg.c_str());
+				}
+			}
+			//cout << "root received \"end of answer entries\" signal from " << m << endl;
+			status.MPI_TAG = 1234; //any value != 53
 		}
 
-		//wait to make sure every processor received the signal before starting relp entries
-		MPI_Waitall(rel->getSize(), sendnbReqs, MPI_STATUSES_IGNORE);
-
-
-		/*---------------------------*/
-		/*---- send relp entries ----*/
-
-		sendentryReqsp = malloc(relp->getSize());
-		int n=0;
-		for (vector<vector<unsigned int> >::iterator it=relp->getBegin(); it!=relp->getEnd(); it++) {
-			int m = (*it)[kp] % numtasks;
-			unsigned int *toSend = relp->getEntries()[0]; //convert vector to array
-			MPI_Isend(toSend, relp->getArity(), MPI_UNSIGNED, m, 42, MPI_COMM_WORLD, &sendentryReqsp[n]); //5th arg = "data=entry for relp" tag
-			n++;
-		}
-
-		MPI_Waitall(rel->getSize(), sendentryReqs, MPI_STATUSES_IGNORE);
-
-		MPI_Request sendnbReqsp[numtasks];
-		for (int m=0; m<numtasks; m++) {
-			MPI_Isend(nbToSendp[m], 1, MPI_UNSIGNED, m, 52, MPI_COMM_WORLD, &sendnbReqsp[m]); //5th arg = "signal end for relp" tag
-		}
-
+		vector<int> newZ = localJoin.getVariables(); //do a copy
+		output.setVariables(newZ);
 	}
 
-	/*---------------------------------------*/
-	/*---- recv and process relp entries ----*/
-
-
-
-
-
-
-
-
-
-
-	if (rank == root) {
-		//wait to make sure every processor receives signal "end for relp" in correct order
-		MPI_Waitall(relp->getSize(), sendentryReqsp, MPI_STATUSES_IGNORE);
-		
-		
-		sendentryReqs = malloc(rel->getSize());
-		
-		vector<unsigned int> dummyVectorp(zp.size(), 42);
-		for (int m=0; m<numtasks; m++) {
-			MPI_Isend(dummyVectorp, zp.size(), MPI_UNSIGNED, m, 52, MPI_COMM_WORLD, &sendsignalReqs[m]); //5th arg = "signal end for rel" tag
-		}
-
-		//wait to make sure every processor received the signal before starting relp entries
-		MPI_Waitall(rel->getSize(), sendnbReqs, MPI_STATUSES_IGNORE);
-	
-	}
-
-	if (rank == root) {
-		free(sendentryReqs);
-		free(sendentryReqsp);
-		delete rel;
-		delete relp;
-	}
-
-	return Relation(1);
+	return output;
 }

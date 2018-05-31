@@ -90,8 +90,8 @@ vector<vector<unsigned int>> Relation::getEntries() const {
 }
 
 vector<unsigned int> Relation::getEntry(int i) const {
-	if (i >= r)
-		throw invalid_argument("tried to getEntry for an index >= r");
+	if (i >= entries.size())
+		throw invalid_argument("tried to getEntry for an index >= entries.size()");
 	return entries[i];
 }
 
@@ -155,6 +155,7 @@ void Relation::lexicoSort(Permutation &permut) {
 		throw invalid_argument("received permutation of dimension != r");
 	
 	vector<int> permut_descriptor = permut.getPermut();
+	
 	sort(entries.begin(), entries.end(), 
 		[permut_descriptor](vector<unsigned int> const &a, vector<unsigned int> const &b) { return lexicoCompare(a, b, permut_descriptor); });
 
@@ -201,10 +202,9 @@ bool lexicoCompare(const vector<unsigned int> &e1, const vector<unsigned int> &e
 	return false;
 }
 
-Relation join(Relation &rel, Relation &relp, bool verbose) { //parameter default: verbose=default
+Relation join(Relation &rel, Relation &relp, int verbose) { //verbose = 0(quiet) or 1(verbose) or 2(very verbose). parameter default: verbose=1.
 	//the only side effect on rel and relp is calling lexicoSort, so we reorder the entries but underlying database is unchanged
-	
-	cout << "Computing join..." << endl;
+	if (verbose>=1) cout << "Computing join..." << endl;
 
 	//NB: assuming there exists a global indexation of variables, v_z, rel.z[i] is defined as: for given assignment (of variables) a,
 	//rel.getEntry(a)[i] = a(v_{z[i]})
@@ -212,8 +212,8 @@ Relation join(Relation &rel, Relation &relp, bool verbose) { //parameter default
 
 	/*---------------------------------------------------------------------------*/
 	/*---- get set of common variables and their representations in z and zp ----*/
-	cout << "| getting set of common variables (x, permut, permutp)..." << endl;
-	cout << "|  | building x and x.size() first values of permutVect and permutpVect... ";
+	if (verbose>=1) cout << "| getting set of common variables (x, permut, permutp)..." << endl;
+	if (verbose>=1) cout << "|  | building x and x.size() first values of permutVect and permutpVect... ";
 
 	vector<int> x; 
 	//NB: we consider x, the intersection of z and zp, to be an ordered set of variables
@@ -253,8 +253,8 @@ Relation join(Relation &rel, Relation &relp, bool verbose) { //parameter default
 	//and thus x[n] = z[permut[n]]
 	//(idem for relp/zp/permutp of course)
 
-	cout << "finished" << endl;
-	cout << "|  | filling the rest of permutVect and permutpVect... ";
+	if (verbose >= 1) cout << "finished" << endl;
+	if (verbose >= 1) cout << "|  | filling the rest of permutVect and permutpVect... ";
 
 	for (int i=0; i<rest.size(); i++) {
 		if (rest[i]) {
@@ -277,7 +277,7 @@ Relation join(Relation &rel, Relation &relp, bool verbose) { //parameter default
 	rel.lexicoSort(permut); //reorders entries, but underlying database is unchanged
 	relp.lexicoSort(permutp);
 
-	cout << "finished" << endl;
+	if (verbose>=1) cout << "finished" << endl;
 	
 	/*
 	//intermediary outputting for testing
@@ -290,7 +290,7 @@ Relation join(Relation &rel, Relation &relp, bool verbose) { //parameter default
 
 	/*-----------------------------------------------------------------------*/
 	/*---- iterate over both Relations and add tuples that coincide on x ----*/
-	cout << "| iterating over both Relations and adding tuples that coincide on x..." << endl;
+	if (verbose>=1) cout << "| iterating over both Relations and adding tuples that coincide on x..." << endl;
 
 	//TODO: begin work (for adapting code after putting z as attribute of rel) --v
 	//EDIT: to check, but I think this is ok. just need to modify mergeEntry(...), and re-check whole function
@@ -315,10 +315,10 @@ Relation join(Relation &rel, Relation &relp, bool verbose) { //parameter default
 	int n=0;
 	while (t_it != rel.getEnd() && tp_it != relp.getEnd()) {
 		n++;
-		if (verbose) cout << "|  | iteration " << n << ": ";
+		if (verbose>=2) cout << "|  | iteration " << n << ": ";
 		if (coincide(*t_it, permut, *tp_it, permutp, c)) {
  			//"t and tp coincide on x"
-			if (verbose) cout << "t and tp coincide on x" << endl;
+			if (verbose>=2) cout << "t and tp coincide on x" << endl;
 
 			//find where to stop (equivalent to a vector::end())
 			vector<vector<unsigned int> >::iterator s_it = t_it;
@@ -335,7 +335,7 @@ Relation join(Relation &rel, Relation &relp, bool verbose) { //parameter default
 			for (vector<vector<unsigned int> >::iterator it=t_it; it!=s_it; it++) {
 				for (vector<vector<unsigned int> >::iterator itp=tp_it; itp!=sp_it; itp++) {
 					output.addEntry(mergeEntry(*it, permut, *itp, permutp, c));
-					if (verbose) cout << "|  |  | nb of entries in output so far: " << output.getEntries().size() << endl;
+					if (verbose>=2) cout << "|  |  | nb of entries in output so far: " << output.getEntries().size() << endl;
 				}
 			}
 
@@ -346,7 +346,7 @@ Relation join(Relation &rel, Relation &relp, bool verbose) { //parameter default
 		} else if ( lexicoCompare(pi_x(*t_it, permut, x.size()), pi_x(*tp_it, permutp, x.size())) ) {
 			//pi_x(t) < pi_x(tp) "pi_x(t) is lexicographically (strictly) smaller than pi_x(tp)"
 			//	"go to the next tuple t"
-			if (verbose) cout << "pi_x(t) < pi_x(tp). jump to the next tuple t" << endl;
+			if (verbose>=2) cout << "pi_x(t) < pi_x(tp). jump to the next tuple t" << endl;
 
 			//small optimization: jump to the next entry t1 of rel s.t t does not agree with t1 on x
 			vector<vector<unsigned int> >::iterator s_it = t_it;
@@ -359,7 +359,7 @@ Relation join(Relation &rel, Relation &relp, bool verbose) { //parameter default
 		} else {
 			//pi_x(t) > pi_x(tp)
 			//	"go to the next tuple tp"
-			if (verbose) cout << "pi_x(t) > pi_x(tp). jump to the next tuple tp" << endl;
+			if (verbose>=2) cout << "pi_x(t) > pi_x(tp). jump to the next tuple tp" << endl;
 
 			vector<vector<unsigned int> >::iterator sp_it = tp_it;
 			while (sp_it!=relp.getEnd() && agree(*sp_it, *tp_it, permutp, x.size())) {
@@ -375,7 +375,7 @@ Relation join(Relation &rel, Relation &relp, bool verbose) { //parameter default
 		}
 	}
 
-	cout << "| finished building join Relation." << endl;
+	if (verbose>=1) cout << "| finished building join Relation." << endl;
 	return output;
 }
 

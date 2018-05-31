@@ -3,6 +3,6 @@
 
 #include "relation.hpp"
 
-Relation MPIjoin(const char *filename, const char *filenamep, vector<int> z, vector<int> zp);
+Relation MPIjoin(Relation &rel, Relation &relp);
 
 #endif //MPIJOIN_H

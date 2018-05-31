@@ -14,7 +14,7 @@ int main(int argc, char** argv) {
 	//Relation facebookRel("../data/facebook.dat", 2);
 	//Relation dblpRel("data/dblp.dat", 2);
 
-	//Relation twitterRel("../data_head/twitter.dat", 2);
+	Relation twitterRel("../data_head/twitter.dat", 2);
 	//Relation facebookRel("../data_head/facebook.dat", 2);
 	//Relation dblpRel("../data_head/dblp.dat", 2);
 
@@ -65,22 +65,27 @@ int main(int argc, char** argv) {
 	vector<int> zp(2);
 	zp[0]=3;
 	zp[1]=4;
-	
-	/*
+
 	twitterRel.setVariables(z);
 	Relation outRel = autoJoin(twitterRel, zp);
+	
 	outRel.writeToFile("../output/autoJoin.txt");
-	*/
 
+	//bonus: sort result before writeToFile so we can easily compare to result from sequential join
+	//we will compare to, for example, "../output/autoJoin_sorted.txt"
+	Permutation identity(outRel.getArity());
+	outRel.lexicoSort(identity);
+	outRel.writeToFile("../output/autoJoin_sorted.txt");
 
 	//with pointers
+	/*
 	Relation *twitterRel;
 	twitterRel = new Relation("../data_head/twitter.dat", 2);
 
 	twitterRel->setVariables(z);
 	Relation outRel = autoJoin(*twitterRel, zp);
 	outRel.writeToFile("../output/autoJoin.txt");
-
+	*/
 
 
     clock_t end = clock();

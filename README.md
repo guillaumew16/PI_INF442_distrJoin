@@ -33,6 +33,8 @@ make
 ##### `main` des codes distribués avec MPI :
 ```bash
 #mpirun -np nb_processeurs -host [noms des machines separes par ,] ./fichier/a/executer
+mpirun -np 3 MPItest #on simule des machines distantes sur le host local
+# ou
 mpirun -np 3 -host allemagne,espagne,pologne MPItest #par exemple
 
 #avec SLURM :
@@ -56,6 +58,11 @@ On a pris les données proposées par l'auteur du sujet à l'adresse indiquée d
   4841532 twitter.dat
   7117732 total
 
+### `MPIjoin.cpp` et `MPIjoin_copydata.cpp`
+
+Ces deux fichiers sont deux implémentaions de task 5, l'une avec le paradigme MPI usuel où on considère que tous les processeurs ont accès aux données (partagées grâce à nfs ou quelque chose comme ça), l'autre où le root copie les données sur le réseau pour les envoyer aux processeurs (en n'envoyant que les données qui le concernent à chaque processeur, bien sûr).
+
+`MPIjoin_copydata.cpp` est légèrement plus compliqué. En fait on n'avait pas réalisé, au moment de faire task 5, que copier les entrées sur le réseau n'était pas nécessaire... d'où cette première version.
 
 ### License
 

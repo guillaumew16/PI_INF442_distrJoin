@@ -1,11 +1,11 @@
 #CC = g++
 CC = g++ -std=c++11 -g #-std=c++11: for lambda functions; -g: for debugging with gdb
-MPICC = mpic++
+MPICC = mpic++ -std=c++11 -g
 
 all: demo test MPItest
 
-demo: relation.o permutation.o demo.cpp
-	$(CC) relation.o permutation.o demo.cpp -o demo
+demo: relation.o permutation.o MPIjoin.o MurmurHash3.o demo.cpp
+	$(MPICC) relation.o permutation.o MPIjoin.o MurmurHash3.o demo.cpp -o demo
 
 test: relation.o permutation.o test.cpp
 	$(CC) relation.o permutation.o test.cpp -o test
@@ -21,6 +21,9 @@ permutation.o: permutation.cpp permutation.hpp
 
 MPIjoin.o: MPIjoin.cpp MPIjoin.hpp
 	$(MPICC) -c MPIjoin.cpp
+
+#MPIjoin.o: MPIjoin_copydata.cpp MPIjoin.hpp
+#	$(MPICC) -c MPIjoin_copydata.cpp -o MPIjoin.o
 
 #builds the .o in the current directory
 MurmurHash3.o: hash_function/MurmurHash3.cpp hash_function/MurmurHash3.h

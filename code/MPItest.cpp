@@ -38,10 +38,14 @@ int main(int argc, char** argv) {
     */
 
     string filePath1, filePath2;
+    /*
     cout << "file describing first relation:" << endl;
     cin >> filePath1;
     cout << "file describing second relation:" << endl;
     cin >> filePath2;
+    */
+    filePath1 = "../data_head/twitter.dat";
+    filePath2 = "../data_head/twitter.dat";
 
     vector<int> z(2);
     z[0]=1;
@@ -50,9 +54,32 @@ int main(int argc, char** argv) {
     zp[0]=2;
     zp[1]=3;
 
-    MPIjoin(filePath1.c_str(), filePath2.c_str(), z, zp);
+    Relation rel(filePath1.c_str(), 2);
+    Relation relp(filePath2.c_str(), 2);
+    rel.setVariables(z);
+    relp.setVariables(zp);
 
+    //cout << "from machine " << rank << ": rel.size() = " << rel.getSize() << " and relp.size() = " << relp.getSize() << endl;
 
+    Relation result = MPIjoin(rel, relp);
+    //Relation result = MPIjoin_file(filePath1.c_str(), filePath2.c_str(), z, zp);
+
+    if (rank == root) {
+        cout<<"arity of result: "<<result.getArity() << endl;
+        cout<<"size of result: "<<result.getSize() << endl;
+        /*
+        for (int i=0; i<20 && i<result.getSize(); i++) {
+            cout << "dimension of entry " << i << ": " <<result.getEntry(i).size()<<endl;
+        }
+        */
+        result.writeToFile("../output/MPItest.txt");
+
+        //bonus: sort result before writeToFile so we can easily compare to result from sequential join
+        //we will compare to, for example, "../output/autoJoin_sorted.txt"
+        Permutation identity(result.getArity());
+        result.lexicoSort(identity);
+        result.writeToFile("../output/MPItest_sorted.txt");
+    }
 
     MPI_Finalize();
 

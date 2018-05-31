@@ -9,7 +9,7 @@ Permutation::Permutation(int r) {
     this->r = r;
     permut.reserve(r);
     for (int i=0; i<r; i++) {
-        permut[i] = i;
+        permut.push_back(i);
     }
 }
 
