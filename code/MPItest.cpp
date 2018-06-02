@@ -39,7 +39,7 @@ int main(int argc, char** argv) {
 
     /*----------------------------*/
     /*---- join two relations ----*/
-    /*
+    
     string filePath1, filePath2;
     // cout << "file describing first relation:" << endl;
     // cin >> filePath1;
@@ -61,7 +61,7 @@ int main(int argc, char** argv) {
     relp.setVariables(zp);
     //cout << "from machine " << rank << ": rel.size() = " << rel.getSize() << " and relp.size() = " << relp.getSize() << endl;
     Relation result = MPIjoin(rel, relp);
-    */
+    
 
 	/*-----------------------------*/
 	/*---- MPIautoJoin twitter ----*/
@@ -75,12 +75,12 @@ int main(int argc, char** argv) {
 	zp[1]=4;
 
 	twitterRel.setVariables(z);
-	Relation result = autoJoin(twitterRel, zp);
+	Relation result = MPIautoJoin(twitterRel, zp);
     */
 
     /*--------------------------------------*/
     /*---- find triangles in a relation ----*/
-    
+    /*
     string filePath1;
     // cout << "file describing relation in which we will find triangles:" << endl;
     // cin >> filePath1;
@@ -88,7 +88,7 @@ int main(int argc, char** argv) {
 
     Relation rel(filePath1.c_str(), 2);
     Relation result = MPItriangle(rel);
-    
+    */
 
     /*-----------------------*/
     /*---- write to file ----*/
@@ -101,15 +101,17 @@ int main(int argc, char** argv) {
             cout << "dimension of entry " << i << ": " <<result.getEntry(i).size()<<endl;
         }
         */
-        //result.writeToFile("../output/MPItest.txt");
-        result.writeToFile("../output/MPItriangle.txt");
+        result.writeToFile("../output/MPItest.txt");
+        //result.writeToFile("../output/MPIautojoin.txt");
+        //result.writeToFile("../output/MPItriangle.txt");
 
         //bonus: sort result before writeToFile so we can easily compare to result from sequential join
         //we will compare to, for example, "../output/autoJoin_sorted.txt"
         Permutation identity(result.getArity());
         result.lexicoSort(identity);
-        //result.writeToFile("../output/MPItest_sorted.txt");
-        result.writeToFile("../output/MPItriangle_sorted.txt");
+        result.writeToFile("../output/MPItest_sorted.txt");
+        //result.writeToFile("../output/MPIautojoin_sorted.txt");
+        //result.writeToFile("../output/MPItriangle_sorted.txt");
     }
 
 

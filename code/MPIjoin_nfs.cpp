@@ -31,6 +31,14 @@ int h(unsigned int tohash, int m) {
 	return output;
 }
 
+Relation MPIjoin_fromfiles(const char *filename, const char *filenamep, vector<int> z, vector<int> zp) {
+	Relation rel(filename, z.size());
+	Relation relp(filenamep, zp.size());
+	rel.setVariables(z);
+	relp.setVariables(zp);
+	return MPIjoin(rel, relp);
+}
+
 Relation MPIjoin(Relation &rel, Relation &relp, int root) { //parameter default: root=0
 	//we use MPI tags to signal processors the type of message they should expect: entry for rel or entry for relp
 
@@ -213,7 +221,7 @@ Relation MPItriangle(Relation &rel, int root) {
 
 	rel.setVariables(z12);
     Relation locIntermRel = MPIautoJoin(rel, z23, root);
-	
+
 	//since each processor has its own version of "output" in MPIjoin, root must broadcast actual result of join
 	//to all other processors before we can continue.
 	//alternatively, we could use the "copydata" version of MPIjoin, which passes all data (including inputs) over the network
@@ -231,6 +239,10 @@ Relation MPItriangle(Relation &rel, int root) {
 		MPI_Bcast(&recvbuffer[0], joinArity, MPI_UNSIGNED ,root, MPI_COMM_WORLD);
 		intermRel.addEntry(recvbuffer); //addEntry adds a copy
 	}
+	/*
+	string filepath = "../output/MPItriangle-intermediary-" + to_string(rank) + ".txt";
+	intermRel.writeToFile(filepath.c_str());
+	*/
 
 	intermRel.setVariables(z123);
 	rel.setVariables(z13);

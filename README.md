@@ -44,25 +44,35 @@ salloc -n 6 --ntasks-per-node=2 mpirun MPItest #par exemple
 
 ### Remarques
 
+#### list of variables
+
 On a choisi de mettre la donnée de "quelles variables sont stockées dans quelles colonnes de la table" (list of variables) comme attribut `z` de la classe `Relation`.
 
 Cela évite d'avoir à passer la liste des variables à chaque opération où on a besoin de savoir à quoi renvoient les colonnes, typiquement pour join...
 
-L'inconvénient est que cela complique les opérations de join d'une table sur elle-même, car cela nécessite de connaître les données et les deux listes de variables. La solution naturelle est de faire une copie de la table, de changer la liste de variables de la copie, puis de join les deux tables (l'originale et la copie) ; mais cela suppose de copier toutes les entrées de la table... Alors que `join` renvoie lui-même une nouvelle Relation.
+L'inconvénient est que cela complique les opérations de join d'une table sur elle-même, car cela nécessite de connaître les données et les deux listes de variables. La solution naturelle est de faire une copie de la table, de changer la liste de variables de la copie, puis de join les deux tables (l'originale et la copie) ; mais cela suppose de copier toutes les entrées de la table... Alors que `join` renvoie lui-même une nouvelle Relation. 
+
+Une autre solution serait d'adapter le code de `join` pour réécrire totalement `autoJoin`, pour diviser par deux l'espace mémoire requis en représentant la "copie" par des permutations sur les entrées. Mais c'est compliqué pour un gain faible, d'autant plus que pour presque toutes nos applications, les arités sont de 2 ou 3.
 
 ### Données de test
 
-On a pris les données proposées par l'auteur du sujet à l'adresse indiquée dans le sujet :
+On a pris les données proposées par l'auteur du sujet à l'adresse indiquée dans le sujet (copiées dans le dossier `data/`:
   2099732 dblp.dat
    176468 facebook.dat
   4841532 twitter.dat
   7117732 total
 
-### `MPIjoin.cpp` et `MPIjoin_copydata.cpp`
+Pour tester la correction on a également utilisé des troncatures de ces fichiers à 100 lignes (`data_head/`).
+
+### `MPIjoin_nfs.cpp` et `MPIjoin_copydata.cpp`
 
 Ces deux fichiers sont deux implémentaions de task 5, l'une avec le paradigme MPI usuel où on considère que tous les processeurs ont accès aux données (partagées grâce à nfs ou quelque chose comme ça), l'autre où le root copie les données sur le réseau pour les envoyer aux processeurs (en n'envoyant que les données qui le concernent à chaque processeur, bien sûr).
 
-`MPIjoin_copydata.cpp` est légèrement plus compliqué. En fait on n'avait pas réalisé, au moment de faire task 5, que copier les entrées sur le réseau n'était pas nécessaire... d'où cette première version.
+`MPIjoin_copydata.cpp` est légèrement plus compliqué. On n'avait pas réalisé, au moment de faire task 5, que copier les inputs sur le réseau n'était pas nécessaire, d'où cette première version.
+
+`MPIjoin_nfs.cpp` s'appuie donc sur l'hypothèse que les Relations données en arguments sont accessibles par tous les processeurs, donc on n'envoie sur le réseau que les données à output.
+
+Lorsqu'il a fallu faire des multi-way joins, on s'est rendus compte que la méthode "avec nfs" n'était pas adaptée, car il faut alors Bcast les résultats intermédiaires à chaque fois. On a donc repris "copydata".
 
 ### License
 

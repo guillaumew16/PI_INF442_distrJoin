@@ -5,6 +5,8 @@
 
 int h(unsigned int tohash, int m); //hash function (% or murmurhash)
 
+Relation MPIjoin_fromfiles(const char *filename, const char *filenamep, vector<int> z, vector<int> zp, int root=0);
+
 Relation MPIjoin(Relation &rel, Relation &relp, int root=0);
 
 Relation MPIautoJoin(Relation &rel, vector<int> &zp, int root=0);

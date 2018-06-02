@@ -25,7 +25,7 @@ public:
 	vector<vector<unsigned int> >::iterator getBegin(); //can't force read-only due to nature of vector::iterator :(
 	vector<vector<unsigned int> >::iterator getEnd();
 	int getSize() const;
-	void addEntry(const vector<unsigned int> newEntry);
+	void addEntry(const vector<unsigned int> newEntry); //adds a copy of newEntry
 	
 	void head(int nl); //print out first nl entries, or all entries if nl<0
 	void writeToFile(const char *filename);
