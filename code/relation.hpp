@@ -44,15 +44,7 @@ private:
 bool lexicoCompare(const vector<unsigned int> &e1, const vector<unsigned int> &e2); //return "e1 < e2" (equivalent to lexicoCompare(e1, e2, Identity(e1.size())) )
 bool lexicoCompare(const vector<unsigned int> &e1, const vector<unsigned int> &e2, vector<int> permut); //return "e1 < e2" for variables order permutVect
 
-Relation join(Relation &rel, Relation &relp, int verbose=1);
-//auxiliary functions for join:
-vector<unsigned int> pi_x(vector<unsigned int> &t, Permutation &permut, int c);
-bool coincide(vector<unsigned int> &t, Permutation &permut, vector<unsigned int> &tp, Permutation &permutp, int c);
-bool agree(vector<unsigned int> &s, vector<unsigned int> &t, Permutation &permut, int c);
-vector<unsigned int> mergeEntry(vector<unsigned int> &t, Permutation &permut, vector<unsigned int> &tp, Permutation &permutp, int c);
 
-Relation autoJoin(Relation &rel, vector<int> &zp); //equivalent to join(rel with given rel.z, rel with rel.z=zp)
-Relation triangle(Relation &rel);
 
 void printVector(vector<int> v, const char *name); //for testing purposes
 void printVector(vector<unsigned int> v, const char *name);

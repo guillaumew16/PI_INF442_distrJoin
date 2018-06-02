@@ -1,6 +1,9 @@
-#include "relation.hpp"
 #include <iostream>
 #include <string>
+
+#include "relation.hpp"
+#include "join.hpp"
+#include "MPIjoin.hpp"
 
 using namespace std;
 

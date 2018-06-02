@@ -24,8 +24,8 @@ int main(int argc, char** argv) {
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
 
-
-    //basic MPI test
+    /*------------------------*/
+    /*---- basic MPI test ----*/
     /*
 	int hostnamelen;
 	char hostname[MPI_MAX_PROCESSOR_NAME];
@@ -37,13 +37,14 @@ int main(int argc, char** argv) {
 	}
     */
 
-    string filePath1, filePath2;
+    /*----------------------------*/
+    /*---- join two relations ----*/
     /*
-    cout << "file describing first relation:" << endl;
-    cin >> filePath1;
-    cout << "file describing second relation:" << endl;
-    cin >> filePath2;
-    */
+    string filePath1, filePath2;
+    // cout << "file describing first relation:" << endl;
+    // cin >> filePath1;
+    // cout << "file describing second relation:" << endl;
+    //cin >> filePath2;
     filePath1 = "../data_head/dblp.dat";
     filePath2 = "../data_head/facebook.dat";
 
@@ -58,11 +59,39 @@ int main(int argc, char** argv) {
     Relation relp(filePath2.c_str(), 2);
     rel.setVariables(z);
     relp.setVariables(zp);
-
     //cout << "from machine " << rank << ": rel.size() = " << rel.getSize() << " and relp.size() = " << relp.getSize() << endl;
-
     Relation result = MPIjoin(rel, relp);
-    //Relation result = MPIjoin_file(filePath1.c_str(), filePath2.c_str(), z, zp);
+    */
+
+	/*-----------------------------*/
+	/*---- MPIautoJoin twitter ----*/
+    /*
+    Relation twitterRel("../data_head/twitter.dat", 2);
+    vector<int> z(2);
+	z[0]=1;
+	z[1]=3;
+	vector<int> zp(2);
+	zp[0]=3;
+	zp[1]=4;
+
+	twitterRel.setVariables(z);
+	Relation result = autoJoin(twitterRel, zp);
+    */
+
+    /*--------------------------------------*/
+    /*---- find triangles in a relation ----*/
+    
+    string filePath1;
+    // cout << "file describing relation in which we will find triangles:" << endl;
+    // cin >> filePath1;
+    filePath1 = "../data_head/twitter.dat";
+
+    Relation rel(filePath1.c_str(), 2);
+    Relation result = MPItriangle(rel);
+    
+
+    /*-----------------------*/
+    /*---- write to file ----*/
 
     if (rank == root) {
         cout<<"arity of result: "<<result.getArity() << endl;
@@ -72,14 +101,18 @@ int main(int argc, char** argv) {
             cout << "dimension of entry " << i << ": " <<result.getEntry(i).size()<<endl;
         }
         */
-        result.writeToFile("../output/MPItest.txt");
+        //result.writeToFile("../output/MPItest.txt");
+        result.writeToFile("../output/MPItriangle.txt");
 
         //bonus: sort result before writeToFile so we can easily compare to result from sequential join
         //we will compare to, for example, "../output/autoJoin_sorted.txt"
         Permutation identity(result.getArity());
         result.lexicoSort(identity);
-        result.writeToFile("../output/MPItest_sorted.txt");
+        //result.writeToFile("../output/MPItest_sorted.txt");
+        result.writeToFile("../output/MPItriangle_sorted.txt");
     }
+
+
 
     MPI_Finalize();
 

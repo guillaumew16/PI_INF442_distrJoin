@@ -4,14 +4,14 @@ MPICC = mpic++ -std=c++11 -g
 
 all: demo test MPItest
 
-demo: relation.o permutation.o MPIjoin.o MurmurHash3.o demo.cpp
-	$(MPICC) relation.o permutation.o MPIjoin.o MurmurHash3.o demo.cpp -o demo
+demo: relation.o permutation.o join.o MPIjoin.o MurmurHash3.o demo.cpp
+	$(MPICC) relation.o permutation.o join.o MPIjoin.o MurmurHash3.o demo.cpp -o demo
 
-test: relation.o permutation.o test.cpp
-	$(CC) relation.o permutation.o test.cpp -o test
+test: relation.o permutation.o join.o test.cpp
+	$(CC) relation.o permutation.o join.o test.cpp -o test
 
-MPItest: relation.o permutation.o MPIjoin.o MurmurHash3.o MPItest.cpp
-	$(MPICC) relation.o permutation.o MPIjoin.o MurmurHash3.o MPItest.cpp -o MPItest
+MPItest: relation.o permutation.o join.o MPIjoin.o MurmurHash3.o MPItest.cpp
+	$(MPICC) relation.o permutation.o join.o MPIjoin.o MurmurHash3.o MPItest.cpp -o MPItest
 
 relation.o: relation.cpp relation.hpp
 	$(CC) -c relation.cpp
@@ -19,8 +19,11 @@ relation.o: relation.cpp relation.hpp
 permutation.o: permutation.cpp permutation.hpp
 	$(CC) -c permutation.cpp
 
-MPIjoin.o: MPIjoin.cpp MPIjoin.hpp
-	$(MPICC) -c MPIjoin.cpp
+join.o: join.cpp join.hpp
+	$(MPICC) -c join.cpp
+
+MPIjoin.o: MPIjoin_nfs.cpp MPIjoin.hpp
+	$(MPICC) -c MPIjoin_nfs.cpp
 
 #MPIjoin.o: MPIjoin_copydata.cpp MPIjoin.hpp
 #	$(MPICC) -c MPIjoin_copydata.cpp -o MPIjoin.o

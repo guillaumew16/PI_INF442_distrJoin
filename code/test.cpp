@@ -4,6 +4,7 @@
 #include <fstream>
 
 #include "relation.hpp"
+#include "join.hpp"
 
 using namespace std;
 
@@ -14,9 +15,9 @@ int main(int argc, char** argv) {
 	//Relation facebookRel("../data/facebook.dat", 2);
 	//Relation dblpRel("data/dblp.dat", 2);
 
-	//Relation twitterRel("../data_head/twitter.dat", 2);
-	Relation facebookRel("../data_head/facebook.dat", 2);
-	Relation dblpRel("../data_head/dblp.dat", 2);
+	Relation twitterRel("../data_head/twitter.dat", 2);
+	//Relation facebookRel("../data_head/facebook.dat", 2);
+	//Relation dblpRel("../data_head/dblp.dat", 2);
 
 	/*---------------------------------------*/
 	/*---- import file and write to file ----*/
@@ -42,7 +43,7 @@ int main(int argc, char** argv) {
 
 	/*--------------------------------*/
 	/*---- join dblp and facebook ----*/
-	
+	/*
 	vector<int> z(2);
 	z[0]=1;
 	z[1]=3;
@@ -53,7 +54,7 @@ int main(int argc, char** argv) {
 	dblpRel.setVariables(z);
 	facebookRel.setVariables(zp);
 	Relation result = join(dblpRel, facebookRel);
-	
+	*/
 
 	/*--------------------------*/
 	/*---- autoJoin twitter ----*/
@@ -67,18 +68,37 @@ int main(int argc, char** argv) {
 
 	twitterRel.setVariables(z);
 	Relation result = autoJoin(twitterRel, zp);
+	*/
+
+	/*-----------------------------------*/
+	/*---- find triangles in twitter ----*/
+	
+	vector<int> z(2);
+	z[0]=1;
+	z[1]=3;
+	vector<int> zp(2);
+	zp[0]=3;
+	zp[1]=4;
+
+	Relation result = triangle(twitterRel);
 	
 
 	/*-----------------------*/
 	/*---- write to file ----*/
 
 	result.writeToFile("../output/test.txt");
+	//result.writeToFile("../output/join.txt");
+	//result.writeToFile("../output/triangle.txt");
+	//result.writeToFile("../output/autoJoin.txt");
 
 	//bonus: sort result before writeToFile so we can easily compare to result from sequential join
 	//we will compare to, for example, "../output/autoJoin_sorted.txt"
 	Permutation identity(result.getArity());
 	result.lexicoSort(identity);
 	result.writeToFile("../output/test_sorted.txt");
+	//result.writeToFile("../output/join_sorted.txt");
+	//result.writeToFile("../output/triangle_sorted.txt");
+	//result.writeToFile("../output/autoJoin_sorted.txt");
 
 
 	

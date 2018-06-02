@@ -2,11 +2,34 @@
 #include <stdexcept>
 #include <iostream>
 #include "mpi.h"
+#include <string>
 
 #include "MPIjoin.hpp"
+#include "hash_function/MurmurHash3.h"
+#include "join.hpp"
 //#include "relation.hpp" <-- already done
 
 using namespace std;
+
+/*
+int h(unsigned int tohash, int m) {
+	return tohash % m;
+}
+*/
+
+int h(unsigned int tohash, int m) {
+	uint32_t seed = 42;
+
+	unsigned int *out = (unsigned int *)malloc(16); //16 bytes = 128 bits
+	//MurmurHash3_x86_32(const void *key, int len, uint32_t seed, void *out); //not sure if it's very bad to use this on a x64 computer..? <-- yes it is x)
+	MurmurHash3_x64_128(&tohash, sizeof(unsigned int), seed, out); //this is probably uselessly expensive. we only get quarter of the output bits.
+
+	int output = *out % m;
+	free(out);
+
+	//cout << "computed h(" << tohash << "," << m << ") = " << output << endl;
+	return output;
+}
 
 Relation MPIjoin(const char *filename, const char *filenamep, vector<int> z, vector<int> zp) {
 	//we use MPI tags to signal processors the type of message they should expect: entry for rel or entry for relp

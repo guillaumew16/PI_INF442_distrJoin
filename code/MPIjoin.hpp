@@ -3,8 +3,12 @@
 
 #include "relation.hpp"
 
-int h(unsigned int tohash, int len); //hash function (% or murmurhash)
+int h(unsigned int tohash, int m); //hash function (% or murmurhash)
 
-Relation MPIjoin(Relation &rel, Relation &relp);
+Relation MPIjoin(Relation &rel, Relation &relp, int root=0);
+
+Relation MPIautoJoin(Relation &rel, vector<int> &zp, int root=0);
+
+Relation MPItriangle(Relation &rel, int root=0);
 
 #endif //MPIJOIN_H
