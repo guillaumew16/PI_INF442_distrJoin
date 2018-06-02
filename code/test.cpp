@@ -14,9 +14,9 @@ int main(int argc, char** argv) {
 	//Relation facebookRel("../data/facebook.dat", 2);
 	//Relation dblpRel("data/dblp.dat", 2);
 
-	Relation twitterRel("../data_head/twitter.dat", 2);
-	//Relation facebookRel("../data_head/facebook.dat", 2);
-	//Relation dblpRel("../data_head/dblp.dat", 2);
+	//Relation twitterRel("../data_head/twitter.dat", 2);
+	Relation facebookRel("../data_head/facebook.dat", 2);
+	Relation dblpRel("../data_head/dblp.dat", 2);
 
 	/*---------------------------------------*/
 	/*---- import file and write to file ----*/
@@ -40,9 +40,9 @@ int main(int argc, char** argv) {
 	twitterRel.writeToFile("../output/lexicoSort.txt");
 	*/
 
-	/*-----------------------------------*/
-	/*---- join facebook and twitter ----*/
-	/*
+	/*--------------------------------*/
+	/*---- join dblp and facebook ----*/
+	
 	vector<int> z(2);
 	z[0]=1;
 	z[1]=3;
@@ -50,15 +50,14 @@ int main(int argc, char** argv) {
 	zp[0]=3;
 	zp[1]=4;
 
-	twitterRel.setVariables(z);
+	dblpRel.setVariables(z);
 	facebookRel.setVariables(zp);
-	Relation outRel = join(twitterRel, facebookRel);
-	outRel.writeToFile("../output/join.txt");
-	*/	
+	Relation result = join(dblpRel, facebookRel);
+	
 
 	/*--------------------------*/
 	/*---- autoJoin twitter ----*/
-	
+	/*
 	vector<int> z(2);
 	z[0]=1;
 	z[1]=3;
@@ -67,29 +66,24 @@ int main(int argc, char** argv) {
 	zp[1]=4;
 
 	twitterRel.setVariables(z);
-	Relation outRel = autoJoin(twitterRel, zp);
+	Relation result = autoJoin(twitterRel, zp);
 	
-	outRel.writeToFile("../output/autoJoin.txt");
+
+	/*-----------------------*/
+	/*---- write to file ----*/
+
+	result.writeToFile("../output/test.txt");
 
 	//bonus: sort result before writeToFile so we can easily compare to result from sequential join
 	//we will compare to, for example, "../output/autoJoin_sorted.txt"
-	Permutation identity(outRel.getArity());
-	outRel.lexicoSort(identity);
-	outRel.writeToFile("../output/autoJoin_sorted.txt");
-
-	//with pointers
-	/*
-	Relation *twitterRel;
-	twitterRel = new Relation("../data_head/twitter.dat", 2);
-
-	twitterRel->setVariables(z);
-	Relation outRel = autoJoin(*twitterRel, zp);
-	outRel.writeToFile("../output/autoJoin.txt");
-	*/
+	Permutation identity(result.getArity());
+	result.lexicoSort(identity);
+	result.writeToFile("../output/test_sorted.txt");
 
 
-    clock_t end = clock();
-    double elapsed_ms = double((end - begin)*1000) / CLOCKS_PER_SEC;
+	
+	clock_t end = clock();
+	double elapsed_ms = double((end - begin)*1000) / CLOCKS_PER_SEC;
 	cout << endl << "Finished running main. Execution time: " << elapsed_ms << "ms" << endl;
     
 	return 0;

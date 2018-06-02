@@ -17,16 +17,17 @@ int h(unsigned int tohash, int len) {
 }
 */
 
-int h(unsigned int tohash, int len) {
-	int *out = (int*)malloc(16);
+int h(unsigned int tohash, int m) {
 	uint32_t seed = 42;
+
+	unsigned int *out = (unsigned int *)malloc(16); //16 bytes = 128 bits
 	//MurmurHash3_x86_32(&tohash, len, seed, &out); //not sure if it's very bad to use this on a x64 computer..? <-- yes it is x)
-	MurmurHash3_x64_128(&tohash, len, seed, &out); //this is probably uselessly expensive. we only get quarter of the output bits.
-	
-	cout << "computed h("<<tohash<<","<<len<<") = "<<*out%len<<endl;
-	
-	int output = *out % len;
+	MurmurHash3_x64_128(&tohash, sizeof(unsigned int), seed, out); //this is probably uselessly expensive. we only get quarter of the output bits.
+
+	int output = *out % m;
 	free(out);
+
+	//cout << "computed h(" << tohash << "," << m << ") = " << output << endl;
 	return output;
 }
 
@@ -102,6 +103,8 @@ Relation MPIjoin(Relation &rel, Relation &relp) {
 		}
 	}
 	locRelp.setVariables(zp);
+	
+	cout << "from machine " << rank << ": locRel has size "<< locRel.getSize() << "; locRelp has size " << locRelp.getSize() << endl;
 
 	/*----------------------------*/
 	/*---- compute local join ----*/

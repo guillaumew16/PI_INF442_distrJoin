@@ -44,8 +44,8 @@ int main(int argc, char** argv) {
     cout << "file describing second relation:" << endl;
     cin >> filePath2;
     */
-    filePath1 = "../data_head/twitter.dat";
-    filePath2 = "../data_head/twitter.dat";
+    filePath1 = "../data_head/dblp.dat";
+    filePath2 = "../data_head/facebook.dat";
 
     vector<int> z(2);
     z[0]=1;
