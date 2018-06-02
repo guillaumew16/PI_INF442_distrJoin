@@ -5,10 +5,30 @@
 #include <string>
 
 #include "MPIjoin.hpp"
+#include "hash_function/MurmurHash3.h"
+
 //#include "relation.hpp" <-- already done
 
 using namespace std;
 
+/*
+int h(unsigned int tohash, int len) {
+	return tohash % len;
+}
+*/
+
+int h(unsigned int tohash, int len) {
+	int *out = (int*)malloc(16);
+	uint32_t seed = 42;
+	//MurmurHash3_x86_32(&tohash, len, seed, &out); //not sure if it's very bad to use this on a x64 computer..? <-- yes it is x)
+	MurmurHash3_x64_128(&tohash, len, seed, &out); //this is probably uselessly expensive. we only get quarter of the output bits.
+	
+	cout << "computed h("<<tohash<<","<<len<<") = "<<*out%len<<endl;
+	
+	int output = *out % len;
+	free(out);
+	return output;
+}
 
 Relation MPIjoin(Relation &rel, Relation &relp) {
 	//we use MPI tags to signal processors the type of message they should expect: entry for rel or entry for relp
@@ -70,14 +90,14 @@ Relation MPIjoin(Relation &rel, Relation &relp) {
 	/*---- compute which entries this processor should join ----*/
 	Relation locRel(z.size());
 	for (vector<vector<unsigned int> >::iterator it=rel.getBegin(); it!=rel.getEnd(); it++) {
-		if ((*it)[k] % numtasks == rank) {
+		if ( h((*it)[k], numtasks) == rank ) {
 			locRel.addEntry(*it);
 		}
 	}
 	locRel.setVariables(z);
 	Relation locRelp(zp.size());
 	for (vector<vector<unsigned int> >::iterator it=relp.getBegin(); it!=relp.getEnd(); it++) {
-		if ((*it)[kp] % numtasks == rank) {
+		if ( h((*it)[kp], numtasks) == rank ) {
 			locRelp.addEntry(*it);
 		}
 	}
@@ -102,7 +122,7 @@ Relation MPIjoin(Relation &rel, Relation &relp) {
 	int n = 0;
 	for (vector<vector<unsigned int> >::iterator it = localJoin.getBegin(); it != localJoin.getEnd(); it++) {
 		//cout << "from machine "<<rank << ": sending an answer entry" << endl;
-		int m = (*it)[k] % numtasks;
+		//int m = h((*it)[k], numtasks);
 		unsigned int *toSend = &(*it)[0];
 		//blocking send to make sure all entries are sent before sending "end of answer entries" signal
 		MPI_Send(toSend, localJoin.getArity(), MPI_UNSIGNED, root, 43, MPI_COMM_WORLD /*, &locSendentryReqs[n]*/); //tag 41: "data=answer entry"
