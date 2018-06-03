@@ -42,7 +42,7 @@ int main(int argc, char** argv) {
 	*/
 
 	/*--------------------------------*/
-	/*---- join dblp and facebook ----*/
+	/*---- join dblp and twitter ----*/
 	/*
 	vector<int> z(2);
 	z[0]=1;

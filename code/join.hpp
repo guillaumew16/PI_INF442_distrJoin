@@ -17,5 +17,6 @@ vector<unsigned int> mergeEntry(vector<unsigned int> &t, Permutation &permut, ve
 
 Relation autoJoin(Relation &rel, vector<int> &zp); //equivalent to join(rel with given rel.z, rel with rel.z=zp)
 Relation triangle(Relation &rel);
+Relation multiJoin(vector<Relation> toJoin);
 
 #endif //JOIN_H

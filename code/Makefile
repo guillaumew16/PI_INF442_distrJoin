@@ -22,11 +22,11 @@ permutation.o: permutation.cpp permutation.hpp
 join.o: join.cpp join.hpp
 	$(MPICC) -c join.cpp
 
-#MPIjoin.o: MPIjoin_nfs.cpp MPIjoin.hpp
-#	$(MPICC) -c MPIjoin_nfs.cpp -o MPIjoin.o
+MPIjoin.o: MPIjoin_nfs.cpp MPIjoin.hpp
+	$(MPICC) -c MPIjoin_nfs.cpp -o MPIjoin.o
 
-MPIjoin.o: MPIjoin_copydata.cpp MPIjoin.hpp
-	$(MPICC) -c MPIjoin_copydata.cpp -o MPIjoin.o
+#MPIjoin.o: MPIjoin_copydata.cpp MPIjoin.hpp
+#	$(MPICC) -c MPIjoin_copydata.cpp -o MPIjoin.o
 
 #builds the .o in the current directory
 MurmurHash3.o: hash_function/MurmurHash3.cpp hash_function/MurmurHash3.h

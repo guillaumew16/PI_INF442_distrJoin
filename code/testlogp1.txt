@@ -1,0 +1,54 @@
+from machine 25: locRel01 has size 125; locRel12 has size 2; locRel02 has size 3
+from machine 1: locRel01 has size 132; locRel12 has size 5; locRel02 has size 8
+from machine 1: localJoin has arity 3, and size 0
+from machine 12: locRel01 has size 74; locRel12 has size 4; locRel02 has size 11
+from machine 3: locRel01 has size 74; locRel12 has size 9; locRel02 has size 10
+from machine 25: localJoin has arity 3, and size 0
+from machine 22: locRel01 has size 80; locRel12 has size 227; locRel02 has size 314
+from machine 5: locRel01 has size 89; locRel12 has size 228; locRel02 has size 321
+from machine 20: locRel01 has size 125; locRel12 has size 362; locRel02 has size 322
+from machine 23: locRel01 has size 89; locRel12 has size 228; locRel02 has size 319
+from machine 10: locRel01 has size 132; locRel12 has size 16; locRel02 has size 17
+from machine 10: localJoin has arity 3, and size 0
+from machine 4: locRel01 has size 80; locRel12 has size 226; locRel02 has size 314
+from machine 22: localJoin has arity 3, and size 6
+from machine 17: locRel01 has size 132; locRel12 has size 20; locRel02 has size 15
+from machine 21: locRel01 has size 74; locRel12 has size 229; locRel02 has size 295
+from machine 24: locRel01 has size 115; locRel12 has size 5; locRel02 has size 2
+from machine 24: localJoin has arity 3, and size 0
+from machine 9: locRel01 has size 128; locRel12 has size 373; locRel02 has size 307
+from machine 3: localJoin has arity 3, and size 0
+from machine 14: locRel01 has size 89; locRel12 has size 231; locRel02 has size 326
+from machine 12: localJoin has arity 3, and size 0
+from machine 4: localJoin has arity 3, and size 6
+from machine 13: locRel01 has size 80; locRel12 has size 237; locRel02 has size 328
+from machine 26: locRel01 has size 132; locRel12 has size 4; locRel02 has size 3
+from machine 5: localJoin has arity 3, and size 14
+from machine 26: localJoin has arity 3, and size 0
+from machine 2: locRel01 has size 125; locRel12 has size 369; locRel02 has size 328
+from machine 9: localJoin has arity 3, and size 16
+from machine 18: locRel01 has size 128; locRel12 has size 6; locRel02 has size 6
+from machine 18: localJoin has arity 3, and size 0
+from machine 17: localJoin has arity 3, and size 0
+from machine 15: locRel01 has size 115; locRel12 has size 348; locRel02 has size 304
+from machine 7: locRel01 has size 125; locRel12 has size 7; locRel02 has size 4
+from machine 16: locRel01 has size 125; locRel12 has size 353; locRel02 has size 323
+from machine 8: locRel01 has size 132; locRel12 has size 4; locRel02 has size 3
+from machine 8: localJoin has arity 3, and size 0
+from machine 11: locRel01 has size 125; locRel12 has size 11; locRel02 has size 10
+from machine 11: localJoin has arity 3, and size 0
+from machine 19: locRel01 has size 132; locRel12 has size 9; locRel02 has size 9
+from machine 19: localJoin has arity 3, and size 0
+from machine 7: localJoin has arity 3, and size 0
+from machine 6: locRel01 has size 115; locRel12 has size 347; locRel02 has size 294
+from machine 0: locRel01 has size 128; locRel12 has size 2; locRel02 has size 2
+from machine 0: localJoin has arity 3, and size 0
+from machine 23: localJoin has arity 3, and size 13
+from machine 21: localJoin has arity 3, and size 4
+from machine 13: localJoin has arity 3, and size 6
+from machine 14: localJoin has arity 3, and size 14
+from machine 20: localJoin has arity 3, and size 16
+from machine 15: localJoin has arity 3, and size 8
+from machine 2: localJoin has arity 3, and size 19
+from machine 6: localJoin has arity 3, and size 10
+from machine 16: localJoin has arity 3, and size 13

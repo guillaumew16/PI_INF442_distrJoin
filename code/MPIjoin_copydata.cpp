@@ -17,8 +17,7 @@ int h(unsigned int tohash, int m) {
 }
 */
 
-int h(unsigned int tohash, int m) {
-	uint32_t seed = 42;
+int h(unsigned int tohash, int m, uint32_t seed) { //parameter default: seed=42
 
 	unsigned int *out = (unsigned int *)malloc(16); //16 bytes = 128 bits
 	//MurmurHash3_x86_32(const void *key, int len, uint32_t seed, void *out); //not sure if it's very bad to use this on a x64 computer..? <-- yes it is x)
@@ -32,6 +31,8 @@ int h(unsigned int tohash, int m) {
 }
 
 Relation MPIjoin_fromfiles(const char *filename, const char *filenamep, vector<int> z, vector<int> zp, int root) { //parameter default: root=0
+	//only root needs to actually import the files.
+
 	cout << "Starting MPIjoin(...). We assume MPI was initialized by caller (MPI_Init(...))." << endl;
 
 	int rank, numtasks;
@@ -275,6 +276,7 @@ Relation MPIjoin(Relation &rel, Relation &relp, int root) { //parameter default:
 		unsigned int dummyValue = 42;
 		//blocking Send so that we don't terminate before root is ready to terminate
 		MPI_Send(&dummyValue, 1, MPI_UNSIGNED, root, 53, MPI_COMM_WORLD); //tag 53: "signal end of answer entries"
+		
 		//we return empty output but must have correct variables
 		vector<int> newZ = localJoin.getVariables(); //do a copy
 		output.setVariables(newZ);
@@ -296,9 +298,8 @@ Relation MPItriangle(Relation &rel, int root) {
 	//both joins of the multi-way join will be performed with the same root processor
 
 	cout << "MPI computing triangles of graph-relation..." << endl;
-    if (rel.getArity() != 2) {
-        cout << "| Error: input relation has arity != 2. Abort" << endl;
-    }
+    if (rel.getArity() != 2)
+        throw invalid_argument("called MPItriangle on input relation with arity != 2");
 
 	int rank, numtasks;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -333,4 +334,17 @@ Relation MPItriangle(Relation &rel, int root) {
 	}
 
 	return triangle;
+}
+
+Relation hyperCubeMultiJoin(vector<Relation> toJoin, int root) { //parameter default: root=0
+	//joins toJoin's elements in the order in which they appear in toJoin:
+	// (((toJoin[0] >< toJoin[1]) >< toJoin[2]) >< ...)
+
+	cout << "called hyperCubeMultiJoin for method \"copydata\", but is not yet implemented. Returning dummy value" << endl;
+	return Relation(1);
+}
+
+Relation HyperCubeTriangle(Relation &rel, int root) { //default parameter: root=0
+	cout << "called HyperCubeTriangle for method \"copydata\", but is not yet implemented. Returning dummy value" << endl;
+	return Relation(1);
 }

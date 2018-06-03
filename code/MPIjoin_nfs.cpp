@@ -17,8 +17,7 @@ int h(unsigned int tohash, int m) {
 }
 */
 
-int h(unsigned int tohash, int m) {
-	uint32_t seed = 42;
+int h(unsigned int tohash, int m, uint32_t seed) { //parameter default: seed=42
 
 	unsigned int *out = (unsigned int *)malloc(16); //16 bytes = 128 bits
 	//MurmurHash3_x86_32(const void *key, int len, uint32_t seed, void *out); //not sure if it's very bad to use this on a x64 computer..? <-- yes it is x)
@@ -129,22 +128,29 @@ Relation MPIjoin(Relation &rel, Relation &relp, int root) { //parameter default:
 
 	/*-------------------------------------*/
 	/*---- send back localJoin entries ----*/
-	MPI_Request locSendentryReqs[localJoin.getSize()];
-	int n = 0;
-	for (vector<vector<unsigned int> >::iterator it = localJoin.getBegin(); it != localJoin.getEnd(); it++) {
-		//cout << "from machine "<<rank << ": sending an answer entry" << endl;
-		//int m = h((*it)[k], numtasks);
-		unsigned int *toSend = &(*it)[0];
-		//blocking send to make sure all entries are sent before sending "end of answer entries" signal
-		MPI_Send(toSend, localJoin.getArity(), MPI_UNSIGNED, root, 43, MPI_COMM_WORLD /*, &locSendentryReqs[n]*/); //tag 41: "data=answer entry"
-		n++;
+	if (rank == root) {
+		//root doesn't Send to itself to avoid deadlock
+		for (vector<vector<unsigned int>>::iterator it = localJoin.getBegin(); it != localJoin.getEnd(); it++) {
+			output.addEntry(*it);
+		}
+	} else {
+		MPI_Request locSendentryReqs[localJoin.getSize()];
+		//int n = 0;
+		for (vector<vector<unsigned int> >::iterator it = localJoin.getBegin(); it != localJoin.getEnd(); it++) {
+			//cout << "from machine "<<rank << ": sending an answer entry" << endl;
+			//int m = h((*it)[k], numtasks);
+			unsigned int *toSend = &(*it)[0];
+			//blocking send to make sure all entries are sent before sending "end of answer entries" signal
+			MPI_Send(toSend, localJoin.getArity(), MPI_UNSIGNED, root, 43, MPI_COMM_WORLD /*, &locSendentryReqs[n]*/); //tag 41: "data=answer entry"
+			//n++;
+		}
 	}
 
 	/*-------------------------------------------------------------------*/
 	/*---- send back dummy message to signal "end of answer entries" ----*/
 	MPI_Request locSignalReq;
-	vector<unsigned int> dummyVector(z.size(), 1); //define a well-defined dummy vector to avoid segfaults and the like
-	MPI_Isend(&dummyVector[0], 1, MPI_UNSIGNED, root, 53, MPI_COMM_WORLD, &locSignalReq); //tag 53: "signal end of answer entries"
+	unsigned int dummyValue = 42;
+	MPI_Isend(&dummyValue, 1, MPI_UNSIGNED, root, 53, MPI_COMM_WORLD, &locSignalReq); //tag 53: "signal end of answer entries"
 
 	//cout<<"from machine " << rank << ": finished Isending localJoin entries, as well as signal \"end of answer entries\"." << endl;
 
@@ -156,6 +162,9 @@ Relation MPIjoin(Relation &rel, Relation &relp, int root) { //parameter default:
 
 		MPI_Status status;
 		for (int m=0; m<numtasks; m++) {
+			if (m == root) { //root doesn't Send to itself to avoid deadlock
+				continue;
+			}
 			while (status.MPI_TAG != 53) { //tag 53: "signal end of answer entries"
 				vector<unsigned int> recvEntry(joinArity);
 				//blocking receive, so that we continue only when all non-root processors sent "end of answer entries" tag
@@ -194,9 +203,8 @@ Relation MPItriangle(Relation &rel, int root) { //parameter default: root=0
 	//both joins of the multi-way join will be performed with the same root processor
 
 	cout << "MPI computing triangles of graph-relation..." << endl;
-    if (rel.getArity() != 2) {
-        cout << "| Error: input relation has arity != 2. Abort" << endl;
-    }
+    if (rel.getArity() != 2)
+        throw invalid_argument("called MPItriangle on input relation with arity != 2");
 
 	int rank, numtasks;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -248,6 +256,206 @@ Relation MPItriangle(Relation &rel, int root) { //parameter default: root=0
 		//format triangle to avoid repeating entries
 		triangle.formatTriangle();
 	}
-	
+
 	return triangle;
+}
+
+Relation hyperCubeMultiJoin(vector<Relation> toJoin, int root) { //parameter default: root=0
+	//joins toJoin's elements in the order in which they appear in toJoin:
+	// (((toJoin[0] >< toJoin[1]) >< toJoin[2]) >< ...)
+
+	cout << "called hyperCubeMultiJoin, but is not yet implemented. Returning dummy value" << endl;
+	return Relation(1);
+}
+
+Relation hyperCubeTriangle(Relation &rel, int root) { //parameter default: root=0
+	//tags used:
+	//(unused) 31: number of rel entries to be received
+	//(unused) 32: number of relp entries to be received
+	//(unused) 41: message contains a rel entry
+	//(unused) 42: message contains a relp entry
+	//(unused) 50: signals end of rel and relp entries
+	//43: message contains an answer entry
+	//53: signals end of answer entries (from processor status.MPI_SOURCE)
+	//(unused) 20: signals end of MPIjoin (all answers have been received by root)
+
+	cout << "calling hyperCubeTriangle, but was not tested at all!..." << endl;
+
+	cout << "Using HyperCube method to compute triangles of graph-relation. We assume MPI was initialized by caller (MPI_Init(...))." << endl;
+	if (rel.getArity() != 2)
+        throw invalid_argument("called MPItriangle on input relation with arity != 2");
+
+	int rank, numtasks;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
+	if (root >= numtasks)
+		throw invalid_argument("called MPItriangle with a root id >= numtasks");
+
+	/*--------------------------------------------------------*/
+	/*---- compute processor's address (m1, m2, ..., m_k) ----*/
+	cout << "for now we assume that numtasks = 3*3*3 = 27" << endl;
+	if (numtasks != 27)
+		throw logic_error("called hyperCubeTriangle but numtasks != 27 (not really a logic_error but whatever)");
+	//if rank = m2_m1_m0 in base 3, then m = [m0, m1, m2]
+	int m[3];
+	m[0] = rank%3;
+	m[1] = (rank/3)%3;
+	m[2] = (rank/3)/3;
+	/*
+	string toPrint = "from machine " + to_string(rank) + ": address array m=";
+	vector<int> mVect = {m[0], m[1], m[2]};
+	printVector(mVect, toPrint.c_str());
+	*/
+
+	/*-----------------------------------------------------------------*/
+	/*---- setup list of variables, seed and other stuff for later ----*/
+	vector<int> z01(2);
+	z01[0]=0;
+	z01[1]=1;
+	vector<int> z12(2);
+	z12[0]=1;
+	z12[1]=2;
+	vector<int> z02(2);
+	z02[0]=0;
+	z02[1]=2;
+
+	int seed[3];
+	seed[0]=1234;
+	seed[1]=2345;
+	seed[2]=3456;
+
+	int joinArity = 3;
+	Relation output(joinArity);
+
+	/*----------------------------------------------------------*/
+	/*---- compute which entries this processor should join ----*/
+	//we see rel as an atom over the variables (x0, x1)
+	Relation locRel01(2);
+	locRel01.setVariables(z01);
+	for (vector<vector<unsigned int> >::iterator it=rel.getBegin(); it!=rel.getEnd(); it++) {
+		if ( h((*it)[0], 3, seed[0]) == m[0] && h((*it)[1], 3, seed[1]) == m[1] ) {
+			locRel01.addEntry(*it);
+		}
+	}
+
+	//we see rel as an atom over the variables (x1, x2)
+	Relation locRel12(2);
+	locRel12.setVariables(z12);
+	for (vector<vector<unsigned int> >::iterator it=rel.getBegin(); it!=rel.getEnd(); it++) {
+		if ( h((*it)[1], 3, seed[1]) == m[1] && h((*it)[2], 3, seed[2]) == m[2] ) {
+			locRel12.addEntry(*it);
+		}
+	}
+
+	//we see rel as an atom over the variables (x0, x2)
+	Relation locRel02(2);
+	locRel02.setVariables(z02);
+	for (vector<vector<unsigned int> >::iterator it=rel.getBegin(); it!=rel.getEnd(); it++) {
+		if ( h((*it)[0], 3, seed[0]) == m[0] && h((*it)[2], 3, seed[2]) == m[2] ) {
+			locRel02.addEntry(*it);
+		}
+	}
+	/*
+	cout << "from machine " << rank << ": locRel01 has size "<< locRel01.getSize() 
+			<< "; locRel12 has size " << locRel12.getSize() 
+			<< "; locRel02 has size " << locRel02.getSize() << endl;
+	*/
+
+	/*----------------------------*/
+	/*---- compute local join ----*/
+	//this will do copies of locRelxy, which is inefficient. for correctness testing we leave it like this for clarity
+	//TODO: change this when testing for performance
+	vector<Relation> toJoin; 
+	toJoin.push_back(locRel01);
+	toJoin.push_back(locRel12);
+	toJoin.push_back(locRel02);
+	Relation localJoin = multiJoin(toJoin);
+
+	if (localJoin.getArity() != joinArity) {
+		//cout << "Detected logic error on machine " << rank << ":" << endl;
+		//cout << "| locally computed join localJoin.getArity() = " << localJoin.getArity() << endl;
+		//cout << "| since we are computing HyperCube triangle, joinArity should be = 3" << endl;
+		throw logic_error("in hyperCubeTriangle, after computing multiJoin locally, we find that localJoin.getArity() != 3");
+	}
+
+	//cout << "from machine "<<rank << ": localJoin has arity " << localJoin.getArity() << ", and size " << localJoin.getSize() << endl;
+
+	/*-------------------------------------*/
+	/*---- send back localJoin entries ----*/
+
+	if (rank == root) {
+		//root doesn't Send to itself to avoid deadlock
+		for (vector<vector<unsigned int> >::iterator it = localJoin.getBegin(); it != localJoin.getEnd(); it++) {
+			output.addEntry(*it);
+		}
+	} else {
+		MPI_Request locSendentryReqs[localJoin.getSize()];
+		int n = 0;
+		for (vector<vector<unsigned int> >::iterator it = localJoin.getBegin(); it != localJoin.getEnd(); it++) {
+			//cout << "from machine "<<rank << ": sending an answer entry" << endl;
+			//int m = h((*it)[k], numtasks);
+			unsigned int *toSend = &(*it)[0];
+			//blocking send to make sure all entries are sent before sending "end of answer entries" signal
+			MPI_Isend(toSend, localJoin.getArity(), MPI_UNSIGNED, root, 43, MPI_COMM_WORLD, &locSendentryReqs[n]); //tag 41: "data=answer entry"
+			n++;
+		}
+		MPI_Waitall(n, locSendentryReqs, MPI_STATUSES_IGNORE);
+	}
+
+
+	/*-------------------------------------------------------------------*/
+	/*---- send back dummy message to signal "end of answer entries" ----*/
+	MPI_Request locSignalReq;
+	unsigned int dummyValue = 42;
+	MPI_Isend(&dummyValue, 1, MPI_UNSIGNED, root, 53, MPI_COMM_WORLD, &locSignalReq); //tag 53: "signal end of answer entries"
+
+	//cout<<"from machine " << rank << ": finished Isending localJoin entries, as well as signal \"end of answer entries\"." << endl;
+
+	//work of non-root processors ends here.
+
+	if (rank == root) {
+		/*------------------------------------------------*/
+		/*---- receive and concatenate answer entries ----*/
+
+		vector<int> nbEntriesRecvd(numtasks, 0);
+
+		MPI_Status status;
+		for (int m=0; m<numtasks; m++) {
+			if (m == root) { //root doesn't Send to itself to avoid deadlock
+				continue;
+			}
+			while (status.MPI_TAG != 53) { //tag 53: "signal end of answer entries"
+				vector<unsigned int> recvEntry(joinArity);
+				//blocking receive, so that we continue only when all non-root processors sent "end of answer entries" tag
+				MPI_Recv(&recvEntry[0], joinArity, MPI_UNSIGNED, m, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+				if (status.MPI_TAG == 43) { //tag 43: "data=answer entry"
+					output.addEntry(recvEntry);
+					//printVector(recvEntry, "received answer entry");
+					//cout << "root received answer entry from " << m << endl;
+					nbEntriesRecvd[m] ++;
+				} else if (status.MPI_TAG != 53) {
+					string errMsg = "root received a message with tag " + to_string(status.MPI_TAG) + ", while expecting answer entries (tag 43 or 53)";
+					printVector(recvEntry, errMsg.c_str());
+					throw logic_error(errMsg.c_str());
+				}
+			}
+			cout << "root received \"end of answer entries\" signal from " << m << "; received " << nbEntriesRecvd[m] << " answer entries from it" << endl;
+			status.MPI_TAG = 1234; //any value != 53
+		}
+	}
+
+	vector<int> newZ = localJoin.getVariables(); //do a copy
+	output.setVariables(newZ);
+
+	if (rank == root) {
+		//format triangle to avoid repeating entries
+		output.formatTriangle();
+	}
+
+	cout << "from machine " << rank << ": locRel01 has size " << locRel01.getSize()
+		 << "; locRel12 has size " << locRel12.getSize()
+		 << "; locRel02 has size " << locRel02.getSize() << endl;
+	cout << "from machine " << rank << ": localJoin has arity " << localJoin.getArity() << ", and size " << localJoin.getSize() << endl;
+
+	return output;
 }

@@ -78,9 +78,9 @@ int main(int argc, char** argv) {
 	Relation result = MPIautoJoin(twitterRel, zp);
     */
 
-    /*--------------------------------------*/
-    /*---- find triangles in a relation ----*/
-    
+    /*------------------------------------------------*/
+    /*---- find triangles in a relation using MPI ----*/
+    /*
     string filePath1;
     // cout << "file describing relation in which we will find triangles:" << endl;
     // cin >> filePath1;
@@ -88,6 +88,18 @@ int main(int argc, char** argv) {
 
     Relation rel(filePath1.c_str(), 2);
     Relation result = MPItriangle(rel);
+    */
+
+    /*--------------------------------------------------------------*/
+    /*---- find triangles in a relation using hyperCubeTriangle ----*/
+    
+    string filePath1;
+    // cout << "file describing relation in which we will find triangles:" << endl;
+    // cin >> filePath1;
+    filePath1 = "../data_head/twitter.dat";
+
+    Relation rel(filePath1.c_str(), 2);
+    Relation result = hyperCubeTriangle(rel);
     
 
     /*-----------------------*/

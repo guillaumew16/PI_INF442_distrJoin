@@ -99,9 +99,6 @@ Relation join(Relation &rel, Relation &relp, int verbose) { //verbose = 0(quiet)
 	/*---- iterate over both Relations and add tuples that coincide on x ----*/
 	if (verbose>=1) cout << "| iterating over both Relations and adding tuples that coincide on x..." << endl;
 
-	//TODO: begin work (for adapting code after putting z as attribute of rel) --v
-	//EDIT: to check, but I think this is ok. just need to modify mergeEntry(...), and re-check whole function
-
 	vector<vector<unsigned int> >::iterator t_it = rel.getBegin();
 	vector<vector<unsigned int> >::iterator tp_it = relp.getBegin();
 	
@@ -301,11 +298,10 @@ Relation autoJoin(Relation &rel, vector<int> &zp) {
 
 Relation triangle(Relation &rel) {
     cout << "Computing triangles of graph-relation..." << endl;
-    if (rel.getArity() != 2) {
-        cout << "| Error: input relation has arity != 2. Abort" << endl;
-    }
-    
-    //it doesn't matter that z[i] is not in range [0, 2] (we assume global indexation of variables v_j)
+	if (rel.getArity() != 2)
+		throw invalid_argument("called MPItriangle on input relation with arity != 2");
+
+	//it doesn't matter that z[i] is not in range [0, 2] (we assume global indexation of variables v_j)
 	vector<int> z12(2);
 	z12[0]=1;
 	z12[1]=2;
@@ -335,4 +331,20 @@ Relation triangle(Relation &rel) {
 	triangle.formatTriangle();
 
     return triangle;
+}
+
+Relation multiJoin(vector<Relation> toJoin) {
+	//joins toJoin's elements in the order in which they appear in toJoin:
+	// (((toJoin[0] >< toJoin[1]) >< toJoin[2]) >< ...)
+	if (toJoin.size() == 0)
+		throw invalid_argument("called multiJoin on empty parameter toJoin");
+
+	cout << "Computing multiJoin. Make sure you setVariables on input before call!" << endl;
+
+	Relation output(toJoin[0]);
+	for (int i=1; i<toJoin.size(); i++) {
+		output = join(output, toJoin[i], 0); //0 for non-verbose
+	}
+
+	return output;
 }
