@@ -163,9 +163,9 @@ Relation MPIjoin(Relation &rel, Relation &relp, int root) { //parameter default:
 				if (status.MPI_TAG == 43) { //tag 43: "data=answer entry"
 					output.addEntry(recvEntry);
 					//printVector(recvEntry, "received answer entry");
-					cout << "root received answer entry from " << m << endl;
+					//cout << "root received answer entry from " << m << endl;
 				} else if (status.MPI_TAG != 53) {
-					string errMsg = "root received a message with tag " + to_string(status.MPI_TAG) + ", while excepting answer entries (tag 43 or 53)";
+					string errMsg = "root received a message with tag " + to_string(status.MPI_TAG) + ", while expecting answer entries (tag 43 or 53)";
 					printVector(recvEntry, errMsg.c_str());
 					throw logic_error(errMsg.c_str());
 				}
@@ -176,6 +176,11 @@ Relation MPIjoin(Relation &rel, Relation &relp, int root) { //parameter default:
 
 		vector<int> newZ = localJoin.getVariables(); //do a copy
 		output.setVariables(newZ);
+
+	} else {
+		/*-------------------------------------------------------*/
+		/*---- little hack for 2-way joins (see MPItriangle) ----*/
+		output = localJoin;
 	}
 
 	return output;
@@ -190,7 +195,7 @@ Relation MPIautoJoin(Relation &rel, vector<int> &zp, int root) { //parameter def
 	return MPIjoin(rel, relp, root);
 }
 
-Relation MPItriangle(Relation &rel, int root) {
+Relation MPItriangle(Relation &rel, int root) { //parameter default: root=0
 	//both joins of the multi-way join will be performed with the same root processor
 
 	cout << "MPI computing triangles of graph-relation..." << endl;
@@ -214,22 +219,17 @@ Relation MPItriangle(Relation &rel, int root) {
 	vector<int> z13(2);
 	z13[0]=1;
 	z13[1]=3;
-	vector<int> z123(3);
-	z123[0]=1;
-	z123[1]=2;
-	z123[2]=3;
 
 	rel.setVariables(z12);
-    Relation locIntermRel = MPIautoJoin(rel, z23, root);
+	Relation locIntermRel = MPIautoJoin(rel, z23, root);
 
 	//since each processor has its own version of "output" in MPIjoin, root must broadcast actual result of join
 	//to all other processors before we can continue.
-	//alternatively, we could use the "copydata" version of MPIjoin, which passes all data (including inputs) over the network
-	//the "copydata" version is actually the correct way to go with multi-way joins
 	int joinArity = locIntermRel.getArity();
-	int joinSize = locIntermRel.getSize(); //must do a copy since Relation::getXXX is const
+	int joinSize = locIntermRel.getSize();
+	vector<int> joinVariables = locIntermRel.getVariables(); //must do a copy since Relation::getXXX is const
 	MPI_Bcast(&joinSize, 1, MPI_INT, root, MPI_COMM_WORLD); //root broadcasts nb of entries to be received
-	
+
 	Relation intermRel(joinArity);
 	vector<unsigned int> recvbuffer(joinArity);
 	for (int i=0; i<joinSize; i++) {
@@ -239,14 +239,20 @@ Relation MPItriangle(Relation &rel, int root) {
 		MPI_Bcast(&recvbuffer[0], joinArity, MPI_UNSIGNED ,root, MPI_COMM_WORLD);
 		intermRel.addEntry(recvbuffer); //addEntry adds a copy
 	}
+	intermRel.setVariables(joinVariables); //don't forget to set variables!
+
 	/*
 	string filepath = "../output/MPItriangle-intermediary-" + to_string(rank) + ".txt";
 	intermRel.writeToFile(filepath.c_str());
 	*/
 
-	intermRel.setVariables(z123);
 	rel.setVariables(z13);
     Relation triangle = MPIjoin(intermRel, rel, root);
 
-    return triangle;
+	if (rank == root) {
+		//format triangle to avoid repeating entries
+		triangle.formatTriangle();
+	}
+	
+	return triangle;
 }

@@ -166,6 +166,37 @@ void Relation::lexicoSort(Permutation &permut) {
 	}*/
 }
 
+void Relation::formatTriangle() {
+	cout << "calling Relation::formatTriangle(). This will have side effects breaking the caller Relation!! Make sure you don't reuse the caller." << endl;
+	
+	if (r != 3)
+		throw invalid_argument("called formatTriangle on a relation with arity != 3");
+	
+	if (entries.size() == 0) {
+		return;
+	}
+
+	//sort each relation
+	for (vector<vector<unsigned int> >::iterator it=entries.begin(); it!=entries.end(); it++) {
+		sort((*it).begin(), (*it).end());
+	}
+	
+	//sort entries
+	Permutation identity(r);
+	lexicoSort(identity);
+
+	//remove identical entries
+	vector<vector<unsigned int> > newEntries;
+	newEntries.push_back(entries[0]);
+	for (int i=1; i<entries.size(); i++) {
+		//operator==: "lhs == rhs" checks if lhs.size() == rhs.size() and if each element in lhs compares equal with the element in rhs at the same position.
+		if (entries[i] != entries[i-1]) {
+			newEntries.push_back(entries[i]);
+		}
+	}
+	entries = newEntries;
+}
+
 bool lexicoCompare(const vector<unsigned int> &e1, const vector<unsigned int> &e2) {
 	//equivalent to lexicoCompare(e1, e2, identity_permutation)
 

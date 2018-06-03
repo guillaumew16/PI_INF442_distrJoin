@@ -86,6 +86,9 @@ int main(int argc, char** argv) {
 	/*-----------------------*/
 	/*---- write to file ----*/
 
+	cout<<"arity of result: "<<result.getArity() << endl;
+	cout<<"size of result: "<<result.getSize() << endl;
+    
 	result.writeToFile("../output/test.txt");
 	//result.writeToFile("../output/join.txt");
 	//result.writeToFile("../output/triangle.txt");

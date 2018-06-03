@@ -58,6 +58,8 @@ Relation MPIjoin_fromfiles(const char *filename, const char *filenamep, vector<i
 }
 
 Relation MPIjoin(Relation &rel, Relation &relp, int root) { //parameter default: root=0
+	//parameters rel and relp are ignored by non-root processors (except to get z and zp)
+
 	//we ended up completely separating code for root processor and for non-root, which is somewhat strange for a MPI program
 	//this is because when we tried putting code in common, we couldn't get rid of deadlock problems
 	//so we decided to send no MPI message from root to itself, to avoid deadlock
@@ -186,12 +188,14 @@ Relation MPIjoin(Relation &rel, Relation &relp, int root) { //parameter default:
 		rootLocalRelp.setVariables(zp);
 		//Relation rootLocalJoin = join(rootLocalRel, rootLocalRelp);
 		output = join(rootLocalRel, rootLocalRelp); //we would only have copied rootLocalJoin's entries into output anyway
+		
 		cout << "^^^ from root" << rank << ": rootLocalRel.getSize()=" << rootLocalRel.getSize() << "; rootLocalRelp.getSize()=" << rootLocalRelp.getSize() << "; output[for now].getSize()=" << output.getSize() << endl;
 
-		/*---------------------------------------------------------*/
-		/*---- receive answer entries from non-root processors ----*/
-		cout << "^ from root: receive answer entries from non-root processors" << endl;
+		/*-------------------------------------------------------------------------*/
+		/*---- receive and concatenate answer entries from non-root processors ----*/
+		cout << "^ from root: receive and concatenate answer entries from non-root processors" << endl;
 		MPI_Status status;
+		status.MPI_TAG = 1234;
 		for (int m=0; m<numtasks; m++) {
 			if (m == root) {
 				continue;
@@ -204,6 +208,7 @@ Relation MPIjoin(Relation &rel, Relation &relp, int root) { //parameter default:
 					output.addEntry(recvEntry);
 				}
 			}
+			status.MPI_TAG = 1234; //any value != 53
 		}
 
 	 	//end "if (rank == root)"
@@ -242,14 +247,14 @@ Relation MPIjoin(Relation &rel, Relation &relp, int root) { //parameter default:
 		cout << "* from machine " << rank << ": compute join of localRel and localRelp" << endl;
 		localRel.setVariables(z);
 		localRelp.setVariables(zp);
-
+		/*
 		string toPrint = "from machine"+to_string(rank)+": first entry of localRel:";
 		printVector(localRel.getEntry(0), toPrint.c_str());
 		toPrint = "from machine" + to_string(rank) + ": first entry of localRelp:";
 		printVector(localRelp.getEntry(0), toPrint.c_str());
 		printVector(z, "z:");
 		printVector(zp, "zp:");
-
+		*/
 		Relation localJoin = join(localRel, localRelp);
 
 		cout << "*** from machine " << rank << ": localRel.getSize()=" << localRel.getSize() << "; localRelp.getSize()=" << localRelp.getSize() << "; localJoin.getSize()=" << localJoin.getSize() << endl;
@@ -273,6 +278,9 @@ Relation MPIjoin(Relation &rel, Relation &relp, int root) { //parameter default:
 		vector<unsigned int> dummyVector(z.size(), 1); //define a well-defined dummy vector to avoid segfaults and the like
 		MPI_Isend(&dummyVector[0], 1, MPI_UNSIGNED, root, 53, MPI_COMM_WORLD, &locSignalReq); //tag 53: "signal end of answer entries"
 	
+		/*-------------------------------------------------------*/
+		/*---- little hack for 2-way joins (see MPItriangle) ----*/
+		output = localJoin;
 	}
 
 	return output;
@@ -287,12 +295,8 @@ Relation MPIautoJoin(Relation &rel, vector<int> &zp, int root) { //parameter def
 	return MPIjoin(rel, relp, root);
 }
 
-
-
-
 Relation MPItriangle(Relation &rel, int root) {
-	//TODO
-	cout << "called \"copydata\" version of MPItriangle, but it is not coded yet. running \"nfs\" version of MPItriangle" << endl;
+	//both joins of the multi-way join will be performed with the same root processor
 
 	cout << "MPI computing triangles of graph-relation..." << endl;
     if (rel.getArity() != 2) {
@@ -315,39 +319,21 @@ Relation MPItriangle(Relation &rel, int root) {
 	vector<int> z13(2);
 	z13[0]=1;
 	z13[1]=3;
-	vector<int> z123(3);
-	z123[0]=1;
-	z123[1]=2;
-	z123[2]=3;
 
 	rel.setVariables(z12);
-    Relation locIntermRel = MPIautoJoin(rel, z23, root);
-
-	//since each processor has its own version of "output" in MPIjoin, root must broadcast actual result of join
-	//to all other processors before we can continue.
-	//alternatively, we could use the "copydata" version of MPIjoin, which passes all data (including inputs) over the network
-	//the "copydata" version is actually the correct way to go with multi-way joins
-	int joinArity = locIntermRel.getArity();
-	int joinSize = locIntermRel.getSize(); //must do a copy since Relation::getXXX is const
-	MPI_Bcast(&joinSize, 1, MPI_INT, root, MPI_COMM_WORLD); //root broadcasts nb of entries to be received
-	
-	Relation intermRel(joinArity);
-	vector<unsigned int> recvbuffer(joinArity);
-	for (int i=0; i<joinSize; i++) {
-		if (rank == root) {
-			recvbuffer = locIntermRel.getEntry(i);
-		}
-		MPI_Bcast(&recvbuffer[0], joinArity, MPI_UNSIGNED ,root, MPI_COMM_WORLD);
-		intermRel.addEntry(recvbuffer); //addEntry adds a copy
-	}
+    Relation intermRel = MPIautoJoin(rel, z23, root);
 	/*
 	string filepath = "../output/MPItriangle-intermediary-" + to_string(rank) + ".txt";
 	intermRel.writeToFile(filepath.c_str());
 	*/
 
-	intermRel.setVariables(z123);
 	rel.setVariables(z13);
     Relation triangle = MPIjoin(intermRel, rel, root);
 
-    return triangle;
+	if (rank == root) {
+		//format triangle to avoid repeating entries
+		triangle.formatTriangle();
+	}
+
+	return triangle;
 }

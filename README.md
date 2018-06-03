@@ -62,17 +62,22 @@ On a pris les données proposées par l'auteur du sujet à l'adresse indiquée d
   4841532 twitter.dat
   7117732 total
 
-Pour tester la correction on a également utilisé des troncatures de ces fichiers à 100 lignes (`data_head/`).
+Pour tester la correction on a également utilisé des troncatures de ces fichiers à 1000 lignes (`data_head/`).
 
 ### `MPIjoin_nfs.cpp` et `MPIjoin_copydata.cpp`
 
 Ces deux fichiers sont deux implémentaions de task 5, l'une avec le paradigme MPI usuel où on considère que tous les processeurs ont accès aux données (partagées grâce à nfs ou quelque chose comme ça), l'autre où le root copie les données sur le réseau pour les envoyer aux processeurs (en n'envoyant que les données qui le concernent à chaque processeur, bien sûr).
 
-`MPIjoin_copydata.cpp` est légèrement plus compliqué. On n'avait pas réalisé, au moment de faire task 5, que copier les inputs sur le réseau n'était pas nécessaire, d'où cette première version.
+`MPIjoin_copydata.cpp` passe sur le réseau les données input comme les données output. L'idée est que le processeur root envoie chaque entrée au processeur concerné, puis une fois qu'on est sûr que les données ont toutes été reçues, on envoie un signal "fin des données input" aux processeurs (grâce aux "tags" MPI). Puis chaque processeur effectue le join sur ce qu'il a reçu et renvoie le résultat à root
+On n'avait pas réalisé, au moment de faire task 5, que copier les inputs sur le réseau n'était pas nécessaire, d'où cette première version.
 
 `MPIjoin_nfs.cpp` s'appuie donc sur l'hypothèse que les Relations données en arguments sont accessibles par tous les processeurs, donc on n'envoie sur le réseau que les données à output.
 
-Lorsqu'il a fallu faire des multi-way joins, on s'est rendus compte que la méthode "avec nfs" n'était pas adaptée, car il faut alors Bcast les résultats intermédiaires à chaque fois. On a donc repris "copydata".
+### *Task 7*
+
+On n'a pas traité *Task 7*, car c'est la seule tâche pour laquelle il est nécessaire d'envoyer des messages entre processeurs non-root. Or, pour faire cela, `MPIjoin_nfs` ne convient pas, puisque les données input ne sont jamais passées explicitement sur le réseau ; et `MPIjoin_copydata` non plus, car chaque processeur devrait alors à la fois envoyer et recevoir des signaux "fin des données input", ce qui pose un problème de deadlock.
+
+On a pensé à faire une troisième version, où au lieu d'envoyer des signaux de "fin de données", on envoie à l'avance le nombre de données qui vont être envoyées. Cependant nous n'avons pas assez de temps. D'ailleurs cette troisième version serait plus sensible à la qualité du réseau, car si un des messages ne parvient pas à destination, le processeur destinataire sera bloqué, contrairement à la deuxième version (`MPIjoin_copydata`) où le programme terminera quand même, avec quelques données manquantes dans l'output.
 
 ### License
 

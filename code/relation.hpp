@@ -32,6 +32,8 @@ public:
 
 	void lexicoSort(Permutation &permutation);
 
+	void formatTriangle(); //avoid repeating entries when computing triangle (cf join.cpp and MPIjoin.cpp). breaks the Relation!
+
 private:
 	int r; //arity
 	vector<int> z; //list of variables. defaults to identity, use setVariables(...) to modify

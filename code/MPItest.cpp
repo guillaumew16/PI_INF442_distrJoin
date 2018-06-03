@@ -39,7 +39,7 @@ int main(int argc, char** argv) {
 
     /*----------------------------*/
     /*---- join two relations ----*/
-    
+    /*
     string filePath1, filePath2;
     // cout << "file describing first relation:" << endl;
     // cin >> filePath1;
@@ -61,7 +61,7 @@ int main(int argc, char** argv) {
     relp.setVariables(zp);
     //cout << "from machine " << rank << ": rel.size() = " << rel.getSize() << " and relp.size() = " << relp.getSize() << endl;
     Relation result = MPIjoin(rel, relp);
-    
+    */
 
 	/*-----------------------------*/
 	/*---- MPIautoJoin twitter ----*/
@@ -80,7 +80,7 @@ int main(int argc, char** argv) {
 
     /*--------------------------------------*/
     /*---- find triangles in a relation ----*/
-    /*
+    
     string filePath1;
     // cout << "file describing relation in which we will find triangles:" << endl;
     // cin >> filePath1;
@@ -88,7 +88,7 @@ int main(int argc, char** argv) {
 
     Relation rel(filePath1.c_str(), 2);
     Relation result = MPItriangle(rel);
-    */
+    
 
     /*-----------------------*/
     /*---- write to file ----*/

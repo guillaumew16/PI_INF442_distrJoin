@@ -328,9 +328,11 @@ Relation triangle(Relation &rel) {
 	intermRel.lexicoSort(identity);
 	intermRel.writeToFile("../output/triangle-intermediary_sorted.txt");
 */
-	intermRel.setVariables(z123);
 	rel.setVariables(z13);
     Relation triangle = join(intermRel, rel);
+
+	//format triangle to avoid repeating entries
+	triangle.formatTriangle();
 
     return triangle;
 }
