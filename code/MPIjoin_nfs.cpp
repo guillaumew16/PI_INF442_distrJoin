@@ -173,15 +173,10 @@ Relation MPIjoin(Relation &rel, Relation &relp, int root) { //parameter default:
 			cout << "root received \"end of answer entries\" signal from " << m << endl;
 			status.MPI_TAG = 1234; //any value != 53
 		}
-
-		vector<int> newZ = localJoin.getVariables(); //do a copy
-		output.setVariables(newZ);
-
-	} else {
-		/*-------------------------------------------------------*/
-		/*---- little hack for 2-way joins (see MPItriangle) ----*/
-		output = localJoin;
 	}
+
+	vector<int> newZ = localJoin.getVariables(); //do a copy
+	output.setVariables(newZ);
 
 	return output;
 }

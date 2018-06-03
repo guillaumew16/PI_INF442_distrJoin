@@ -92,8 +92,7 @@ Relation MPIjoin(Relation &rel, Relation &relp, int root) { //parameter default:
 	//we could not use Bcast to broadcast "signal end of rel and relp entries" because of the way MPI works: you don't Recv a Bcast, everyone has to call Bcast
 	//but what we need is a way to send the signal to the processors, even as they are ready to receive new entries
 
-	cout << "running 'copydata' version of MPIjoin, but it was not tested at all!..." << endl
-			<< "moreover, it is very very very probably bugged." << endl;
+	cout << "running 'copydata' version of MPIjoin, but not finished testing" << endl;
 	cout << "Starting MPIjoin(...). We assume MPI was initialized by caller (MPI_Init(...))." << endl;
 
 	int rank, numtasks;
@@ -170,15 +169,14 @@ Relation MPIjoin(Relation &rel, Relation &relp, int root) { //parameter default:
 		/*---- send dummy messages to signal end of rel and relp entries ----*/
 		cout << "^ from root: send dummy messages to signal end of rel and relp entries" << endl;
 		MPI_Request sendsignalReqs[numtasks]; //MPI_Isend requires a MPI_Request parameter, but we don't actually use this
-		vector<unsigned int> dummyVector(z.size(), 1); //define a well-defined dummy vector to avoid segfaults and the like
-		//^-- I don't think this is necessary. TODO: try removing it and replacing by a simple unsigned int
+		unsigned int dummyValue = 42;
 		for (int m=0; m<numtasks; m++) {
 			if (m == root) {
 				cout << "^ from root: choosing not to send signal to root itself " << root << endl;
 				continue;
 			}
 			cout << "^ from root: sending signal end of rel and relp entries to processor " << m << endl;
-			MPI_Isend(&dummyVector[0], 1, MPI_UNSIGNED, m, 50, MPI_COMM_WORLD, &sendsignalReqs[m]); //tag 50: "signal end of rel and relp entries"
+			MPI_Isend(&dummyValue, 1, MPI_UNSIGNED, m, 50, MPI_COMM_WORLD, &sendsignalReqs[m]); //tag 50: "signal end of rel and relp entries"
 		}
 
 		/*--------------------------------------------------------*/
@@ -186,8 +184,8 @@ Relation MPIjoin(Relation &rel, Relation &relp, int root) { //parameter default:
 		cout << "^ from root: compute join of rootLocalRel and rootLocalRelp" << endl;
 		rootLocalRel.setVariables(z);
 		rootLocalRelp.setVariables(zp);
-		//Relation rootLocalJoin = join(rootLocalRel, rootLocalRelp);
-		output = join(rootLocalRel, rootLocalRelp); //we would only have copied rootLocalJoin's entries into output anyway
+		//Relation rootLocalJoin = join(rootLocalRel, rootLocalRelp, 0); //0 for non-verbose
+		output = join(rootLocalRel, rootLocalRelp, 0); //we would only have copied rootLocalJoin's entries into output anyway
 		
 		cout << "^^^ from root" << rank << ": rootLocalRel.getSize()=" << rootLocalRel.getSize() << "; rootLocalRelp.getSize()=" << rootLocalRelp.getSize() << "; output[for now].getSize()=" << output.getSize() << endl;
 
@@ -255,7 +253,7 @@ Relation MPIjoin(Relation &rel, Relation &relp, int root) { //parameter default:
 		printVector(z, "z:");
 		printVector(zp, "zp:");
 		*/
-		Relation localJoin = join(localRel, localRelp);
+		Relation localJoin = join(localRel, localRelp, 0); //0 for non-verbose
 
 		cout << "*** from machine " << rank << ": localRel.getSize()=" << localRel.getSize() << "; localRelp.getSize()=" << localRelp.getSize() << "; localJoin.getSize()=" << localJoin.getSize() << endl;
 
@@ -274,13 +272,12 @@ Relation MPIjoin(Relation &rel, Relation &relp, int root) { //parameter default:
 		/*-----------------------------------------------------------------*/
 		/*---- send back dummy message to signal end of answer entries ----*/
 		cout << "* from machine " << rank << ": send back dummy message to signal end of answer entries" << endl;
-		MPI_Request locSignalReq;
-		vector<unsigned int> dummyVector(z.size(), 1); //define a well-defined dummy vector to avoid segfaults and the like
-		MPI_Isend(&dummyVector[0], 1, MPI_UNSIGNED, root, 53, MPI_COMM_WORLD, &locSignalReq); //tag 53: "signal end of answer entries"
-	
-		/*-------------------------------------------------------*/
-		/*---- little hack for 2-way joins (see MPItriangle) ----*/
-		output = localJoin;
+		unsigned int dummyValue = 42;
+		//blocking Send so that we don't terminate before root is ready to terminate
+		MPI_Send(&dummyValue, 1, MPI_UNSIGNED, root, 53, MPI_COMM_WORLD); //tag 53: "signal end of answer entries"
+		//we return empty output but must have correct variables
+		vector<int> newZ = localJoin.getVariables(); //do a copy
+		output.setVariables(newZ);
 	}
 
 	return output;
@@ -322,10 +319,10 @@ Relation MPItriangle(Relation &rel, int root) {
 
 	rel.setVariables(z12);
     Relation intermRel = MPIautoJoin(rel, z23, root);
-	/*
+	
 	string filepath = "../output/MPItriangle-intermediary-" + to_string(rank) + ".txt";
 	intermRel.writeToFile(filepath.c_str());
-	*/
+	
 
 	rel.setVariables(z13);
     Relation triangle = MPIjoin(intermRel, rel, root);
