@@ -71,13 +71,6 @@ On n'a pas traité *Task 7*, car c'est la seule tâche pour laquelle il est néc
 
 On a pensé à faire une troisième version, où au lieu d'envoyer des signaux de "fin de données", on envoie à l'avance le nombre de données qui vont être envoyées. Cependant nous n'avons pas assez de temps. D'ailleurs cette troisième version serait plus sensible à la qualité du réseau, car si un des messages ne parvient pas à destination, le processeur destinataire sera bloqué, contrairement à la deuxième version (`MPIjoin_copydata`) où le programme terminera quand même, avec quelques données manquantes dans l'output.
 
-### *Task 8*
-
-J'ai réalisé la partie "compute triangles using HyperCube" de *Task 8* dans les deux versions, `MPI_nfs` et `MPI_copydata`.
-- `MPI_nfs`: le programme renvoie des résultats différents à chaque exécution. Je suspectais qu'il y a un problème dans l'ordre d'envoi des messages MPI, mais après avoir revérifié plusieurs fois, je ne vois pas d'erreur.
-- `MPI_copydata`: le programme fonctionne.
-Je n'ai pas eu le temps de réaliser la partie de calcul de multiway-join général.
-
 ### Remarques
 
 #### list of variables

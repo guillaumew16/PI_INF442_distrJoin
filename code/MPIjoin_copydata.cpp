@@ -365,8 +365,6 @@ Relation hyperCubeTriangle(Relation &rel, int root) { //default parameter: root=
 	//- root can keep track of which processor terminated and which did not (using status.MPI_SOURCE)
 	//- root simply concatenates answer entries and returns.
 
-	cout << "calling hyperCubeTriangle, but was not tested at all!..." << endl;
-
 	cout << "Using HyperCube method to compute triangles of graph-relation. We assume MPI was initialized by caller (MPI_Init(...))." << endl;
 	if (rel.getArity() != 2)
 		throw invalid_argument("called hyperCubeTriangle on input relation with arity != 2");
