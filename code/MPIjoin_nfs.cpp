@@ -283,24 +283,25 @@ Relation hyperCubeTriangle(Relation &rel, int root) { //parameter default: root=
 
 	cout << "Using HyperCube method to compute triangles of graph-relation. We assume MPI was initialized by caller (MPI_Init(...))." << endl;
 	if (rel.getArity() != 2)
-        throw invalid_argument("called MPItriangle on input relation with arity != 2");
+		throw invalid_argument("called hyperCubeTriangle on input relation with arity != 2");
 
 	int rank, numtasks;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
 	if (root >= numtasks)
-		throw invalid_argument("called MPItriangle with a root id >= numtasks");
+		throw invalid_argument("called hyperCubeTriangle with a root id >= numtasks");
 
-	/*--------------------------------------------------------*/
-	/*---- compute processor's address (m1, m2, ..., m_k) ----*/
 	cout << "for now we assume that numtasks = 3*3*3 = 27" << endl;
 	if (numtasks != 27)
 		throw logic_error("called hyperCubeTriangle but numtasks != 27 (not really a logic_error but whatever)");
-	//if rank = m2_m1_m0 in base 3, then m = [m0, m1, m2]
+
+	/*--------------------------------------------------------*/
+	/*---- compute processor's address (m1, m2, ..., m_k) ----*/
+	//if rank = m0_m1_m2 in base 3, then m = [m0, m1, m2]
 	int m[3];
-	m[0] = rank%3;
+	m[2] = rank%3;
 	m[1] = (rank/3)%3;
-	m[2] = (rank/3)/3;
+	m[0] = (rank/3)/3;
 	/*
 	string toPrint = "from machine " + to_string(rank) + ": address array m=";
 	vector<int> mVect = {m[0], m[1], m[2]};
@@ -342,7 +343,7 @@ Relation hyperCubeTriangle(Relation &rel, int root) { //parameter default: root=
 	Relation locRel12(2);
 	locRel12.setVariables(z12);
 	for (vector<vector<unsigned int> >::iterator it=rel.getBegin(); it!=rel.getEnd(); it++) {
-		if ( h((*it)[1], 3, seed[1]) == m[1] && h((*it)[2], 3, seed[2]) == m[2] ) {
+		if ( h((*it)[0], 3, seed[1]) == m[1] && h((*it)[1], 3, seed[2]) == m[2] ) {
 			locRel12.addEntry(*it);
 		}
 	}
@@ -351,7 +352,7 @@ Relation hyperCubeTriangle(Relation &rel, int root) { //parameter default: root=
 	Relation locRel02(2);
 	locRel02.setVariables(z02);
 	for (vector<vector<unsigned int> >::iterator it=rel.getBegin(); it!=rel.getEnd(); it++) {
-		if ( h((*it)[0], 3, seed[0]) == m[0] && h((*it)[2], 3, seed[2]) == m[2] ) {
+		if ( h((*it)[0], 3, seed[0]) == m[0] && h((*it)[1], 3, seed[2]) == m[2] ) {
 			locRel02.addEntry(*it);
 		}
 	}
@@ -380,6 +381,13 @@ Relation hyperCubeTriangle(Relation &rel, int root) { //parameter default: root=
 
 	//cout << "from machine "<<rank << ": localJoin has arity " << localJoin.getArity() << ", and size " << localJoin.getSize() << endl;
 
+
+
+	string filepath = "../output/run1/hyperCubetriangle-localJoin-" + to_string(rank) + ".txt";
+	localJoin.writeToFile(filepath.c_str());
+	cout << "*** from machine " << rank << ": localJoin.getSize()=" << localJoin.getSize() << endl;
+
+
 	/*-------------------------------------*/
 	/*---- send back localJoin entries ----*/
 
@@ -405,10 +413,12 @@ Relation hyperCubeTriangle(Relation &rel, int root) { //parameter default: root=
 
 	/*-------------------------------------------------------------------*/
 	/*---- send back dummy message to signal "end of answer entries" ----*/
-	MPI_Request locSignalReq;
-	unsigned int dummyValue = 42;
-	MPI_Isend(&dummyValue, 1, MPI_UNSIGNED, root, 53, MPI_COMM_WORLD, &locSignalReq); //tag 53: "signal end of answer entries"
-
+	if (rank != root) {
+		//root doesn't send to itself to avoid deadlock
+		MPI_Request locSignalReq;
+		unsigned int dummyValue = 42;
+		MPI_Isend(&dummyValue, 1, MPI_UNSIGNED, root, 53, MPI_COMM_WORLD, &locSignalReq); //tag 53: "signal end of answer entries"
+	}
 	//cout<<"from machine " << rank << ": finished Isending localJoin entries, as well as signal \"end of answer entries\"." << endl;
 
 	//work of non-root processors ends here.
@@ -420,6 +430,7 @@ Relation hyperCubeTriangle(Relation &rel, int root) { //parameter default: root=
 		vector<int> nbEntriesRecvd(numtasks, 0);
 
 		MPI_Status status;
+		status.MPI_TAG = 1234;
 		for (int m=0; m<numtasks; m++) {
 			if (m == root) { //root doesn't Send to itself to avoid deadlock
 				continue;

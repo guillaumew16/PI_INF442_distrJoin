@@ -22,7 +22,7 @@ int main(int argc, char** argv) {
 	/*---------------------------------------*/
 	/*---- import file and write to file ----*/
 	/*
-	Relation customRel("../data_head/custom.dat", 5);
+	Relation customRel("../data_head/custom.dat");
 	customRel.head(20);
 	customRel.writeToFile("../output/copy.txt");
 	*/

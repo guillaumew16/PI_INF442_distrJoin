@@ -1,5 +1,7 @@
 #include <iostream>
 #include <fstream>
+#include <string>
+#include <sstream>
 #include <algorithm> // std::sort
 #include <stdexcept>
 
@@ -16,8 +18,58 @@ Relation::Relation(int r) {
 	}
 }
 
+Relation::Relation(const char *filename) {
+	//"won't-fix" bug:
+	//chez moi quand on donne un filename qui n'existe pas, le constructor de ifstream ne renvoie pas d'exception et on obtient une Relation vide.
+
+	cout << "Importing relation from file " << filename << ", assuming it is in correct format. Guessing arity while reading file." << endl;
+
+	ifstream file(filename);
+	string line;
+
+	//getline moves forward to 2nd line
+	if (!getline(file, line)) {
+		cout << "Warning: tried to import relation from empty file. Returning empty Relation" << endl;
+		this->r = 0; //any defined value
+
+	} else {
+		//processing first line and guessing arity
+		unsigned int newValue = -1;
+		istringstream iss1(line);
+		int n1=0;
+		entries.push_back(vector<unsigned int>());
+		while (iss1 >> newValue) {
+			n1++;
+			entries[0].push_back(newValue);
+		}
+		cout << "Guess for arity of " << filename << ": arity=" << n1 << endl;
+		
+		//initialize r and z
+		this->r = n1;
+		z.reserve(r);
+		for (int i=0; i<r; i++) { //z defaults to identity
+			z.push_back(i);
+		}
+
+		//get further lines
+		while (getline(file, line)) {
+			istringstream iss(line);
+			entries.push_back(vector<unsigned int>());
+			while (iss >> newValue) {
+				entries.back().push_back(newValue);
+			}
+			if (entries.back().size() != r) {
+				throw invalid_argument("Tried to import relation from file and guessing arity, but file is not in correct format");
+			}
+		}
+	}
+
+	cout << "Finished importing" << endl;
+	file.close();
+}
+
 Relation::Relation(const char *filename, int r) {
-	//"won't-fix" bug: 
+	//"won't-fix" bug: (same as Relation(const char *filename))
 	//chez moi quand on donne un filename qui n'existe pas, le constructor de ifstream ne renvoie pas d'exception et on obtient une Relation vide.
 
 	cout << "Importing relation from file " << filename << ", *assuming* it is in correct format and has specified arity (" << r << ")" << endl;
@@ -41,6 +93,10 @@ Relation::Relation(const char *filename, int r) {
 		if (n == r) { //we could have used n%r instead, but file may be very long, so this is easier
 			n = 0;
 		}
+	}
+
+	if (entries.size() == 0) { //for consistency with behaviour of Relation(const char *)
+
 	}
 	
 	/* for record, the old code for binary relations only:
@@ -247,4 +303,52 @@ void printVector(vector<unsigned int> v, const char *name) {
 		cout << *it << ' ';
 	}
 	cout << endl;
+}
+
+Relation fancyImport(string name, string defaultPath) { //parameter default: defaultPath=""
+	string filePath;
+    string rStr;
+    string zStr;
+	int r;
+	Relation rel(1);
+
+	if (defaultPath != "") {
+		cout << "data file for relation " << name << " (or leave empty to import from " << defaultPath << "): " << endl;
+	} else {
+		cout << "data file for relation " << name << ": " << endl;
+	}
+    getline(cin, filePath);
+
+    cout << "arity of relation " << name << " (or leave empty to guess): " << endl;
+    getline(cin, rStr);
+    cout << "list of variables for relation " << name << ": " << endl;
+    getline(cin, zStr);
+
+	if (filePath == "") {
+		if (defaultPath != "") {
+			filePath = defaultPath;
+		} else {
+			cout << "you did not enter a data file path. Aborting" << endl;
+			exit(1);
+		}
+	}
+    if (rStr != "") {
+        r = stoi(rStr);
+        rel = Relation(filePath.c_str(), r);
+    } else {
+        rel = Relation(filePath.c_str());
+        r = rel.getArity();
+    }
+    vector<int> z;
+    istringstream iss(zStr);
+    string word;
+    while (iss >> word) {
+        z.push_back(stoi(word));
+    }
+	if (z.size() != r) {
+		cout << "given list of variables has wrong arity: " << z.size() << "!= expected arity: " << r <<". Will throw exception" << endl;
+	}
+    rel.setVariables(z);
+
+	return rel;
 }

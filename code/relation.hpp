@@ -10,6 +10,7 @@ class Relation {
 
 public:
 	Relation(int r); //empty Relation
+	Relation(const char *filename); //import from .dat (and guess arity)
 	Relation(const char *filename, int r); //import from .dat
 	Relation(const Relation &thatRel); //copy an existing Relation
 	//~Relation(); <-- we use default destructor
@@ -50,5 +51,7 @@ bool lexicoCompare(const vector<unsigned int> &e1, const vector<unsigned int> &e
 
 void printVector(vector<int> v, const char *name); //for testing purposes
 void printVector(vector<unsigned int> v, const char *name);
+
+Relation fancyImport(string name, string defaultPath="");
 
 #endif //RELATION_H
