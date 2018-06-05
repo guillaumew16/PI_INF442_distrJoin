@@ -30,7 +30,7 @@ Relation::Relation(const char *filename) {
 	//getline moves forward to 2nd line
 	if (!getline(file, line)) {
 		cout << "Warning: tried to import relation from empty file. Returning empty Relation" << endl;
-		this->r = 0; //any defined value
+		this->r = 0; //any defined value. bonus: z.size() = r
 
 	} else {
 		//processing first line and guessing arity
@@ -137,6 +137,15 @@ int Relation::getVariable(int i) const {
 void Relation::setVariables(vector<int> &newZ) {
 	if (newZ.size() != this->r)
 		throw invalid_argument("tried to set z (list of variables) to a vector of size != r");
+
+	//check that newZ has no duplicate variable (see README for reason)
+	for (int i=0; i<r; i++) {
+		for (int j=i+1; j<r; j++) {
+			if (newZ[i] == newZ[j]) {
+				throw invalid_argument("tried to set z (list of variables) to a newZ containing duplicate variables");
+			}
+		}
+	}
 
 	this->z = newZ;
 }

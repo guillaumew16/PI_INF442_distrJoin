@@ -12,12 +12,12 @@
 
 using namespace std;
 
-/*
-int h(unsigned int tohash, int m) {
-	return tohash % m;
-}
-*/
 
+int h(unsigned int tohash, int m, uint32_t seed) { //parameter default: seed=42
+	return (tohash+seed) % m;
+}
+
+/*
 int h(unsigned int tohash, int m, uint32_t seed) { //parameter default: seed=42
 
 	unsigned int *out = (unsigned int *)malloc(16); //16 bytes = 128 bits
@@ -30,6 +30,7 @@ int h(unsigned int tohash, int m, uint32_t seed) { //parameter default: seed=42
 	//cout << "computed h(" << tohash << "," << m << ") = " << output << endl;
 	return output;
 }
+*/
 
 Relation MPIjoin_fromfiles(const char *filename, const char *filenamep, vector<int> z, vector<int> zp) {
 	Relation rel(filename, z.size());
@@ -120,8 +121,8 @@ Relation MPIjoin(Relation &rel, Relation &relp, int root) { //parameter default:
 
 	if (localJoin.getArity() != joinArity) {
 		//cout << "Detected logic error on machine " << rank << ":" << endl;
-		//cout << "| locally computed join localJoin.getArity() = " << localJoin.getArity() << endl;
-		//cout << "| previously computed joinArity = " << joinArity << endl;
+		//		<< "| locally computed join localJoin.getArity() = " << localJoin.getArity() << endl;
+		//		<< "| previously computed joinArity = " << joinArity << endl;
 		throw logic_error("after computing localJoin, we find that localJoin.getArity() != z.size() + zp.size() - c");
 	}
 
@@ -275,10 +276,7 @@ Relation hyperCubeMultiJoin(vector<Relation> toJoin, int root) { //parameter def
 	//53: signals end of answer entries (from processor status.MPI_SOURCE)
 	//(unused) 20: signals end of MPIjoin (all answers have been received by root)
 
-	cout << "called hyperCubeMultiJoin, but is not yet tested... "
-			<< "not even finished coding! returning dummy relation" << endl;
-	return Relation(1);
-
+	cout << "called hyperCubeMultiJoin, but is not finished testing... " << endl;
 	cout << "Using HyperCube method to compute a multi-way join. We assume MPI was initialized by caller (MPI_Init(...))." << endl;
 
 	int rank, numtasks;
@@ -343,8 +341,8 @@ Relation hyperCubeMultiJoin(vector<Relation> toJoin, int root) { //parameter def
 	/*---- compute processor's address (m1, m2, ..., m_dim) ----*/
 	//if rank = m0_m1_..._m_{dim-1} in base side, then m = [m0, m1, ..., m_{dim-1}]
 	int m[dim];
-	int rankPre; //rank prefix in base side
-	for (int i=dim-1; i>=0; i++) {
+	int rankPre = rank; //rank prefix in base side
+	for (int i=dim-1; i>=0; i--) {
 		m[i] = rankPre%side;
 		rankPre = rankPre/side;
 	}
@@ -356,18 +354,21 @@ Relation hyperCubeMultiJoin(vector<Relation> toJoin, int root) { //parameter def
 		mVect[i] = m[i];
 	}
 	printVector(mVect, toPrint.c_str());
-	
+
 
 	/*----------------------------------------------*/
 	/*---- setup seed and other stuff for later ----*/
 
-	//one seed per variable
-	int seed[dim];
+	//one seed per variable. instead of making seed an array, which implies having to know which index corresponds to which variable, we make seed a map
+	map<int, int> seed;
 	for (int i=0; i<dim; i++) {
-		seed[i] = 234*i; //whatever, as long as guarantees reproducibility
+		seed[x[i]] = 234*x[i]; //map::operator[] is a way to insert value as well as access. 
+		//keys of seed are variables themselves (assuming global indexation of variables).
+		//x was built s.t each elt is unique
+		//seed[x[i]] value doesn't matter, as long as allows reproducibility
 	}
 
-	int joinArity = 3;
+	int joinArity = dim; //=tot nb of variables
 	Relation output(joinArity);
 
 	/*----------------------------------------------------------*/
@@ -375,86 +376,60 @@ Relation hyperCubeMultiJoin(vector<Relation> toJoin, int root) { //parameter def
 
 	vector<Relation> localToJoin;
 	localToJoin.reserve(toJoin.size());
+	//we keep all relations, even those with no entry to be treated by current processor. so we will always end up with toJoin.size() relations to join, some of which may be empty
+	//*it is not correct* to just forget the local relations with no entry.
 
 	for (vector<Relation>::iterator itRel=toJoin.begin(); itRel!=toJoin.end(); itRel++) {
-		localToJoin.push_back(Relation(itRel->getArity()));
-		localToJoin.back().setVariables(itRel->getVariables());
+		localToJoin.push_back(Relation(itRel->getArity())); //we keep all relations, even those with no entry to be treated by current processor.
+		vector<int> itRelZ = itRel->getVariables(); //must do a copy because of consts
+		localToJoin.back().setVariables(itRelZ);
 
 		for (vector<vector<unsigned int> >::iterator it=itRel->getBegin(); it!=itRel->getEnd(); it++) {
 			//*it is an entry of *itRel
 
-			bool shouldAdd = false; //should we add to localToJoin, i.e. does (*it) match this processor's address on variables itRel->getVariables()
-			for (variable v in it->getVariables) {
-				shouldAdd = shouldAdd && h((*it)[v], side, seed[0]) == m[v]
-				//^-- but with correct conventions for access to variables
-			}
-			//TODO
+			bool shouldAdd = true; //should we add to localToJoin
+			//i.e. does (*it) match this processor's address on variables itRel->getVariables()
 
-			if (flag) {
+			for (int i=0; i<itRel->getArity(); i++) { //for each variable zi of *itRel, ...
+				int zi = itRel->getVariable(i);
+				//the value corresponding to the variable zi in the entry *it is (*it)[i]
+				//the seed corresponding to the variable zi is seed[zi] (seed is a map!)
+				if (h((*it)[i], side, seed[zi]) != m[zi]) {
+					shouldAdd = false;
+					break;
+				}
+			}
+
+			if (shouldAdd) {
 				localToJoin.back().addEntry(*it);
 			}
 		}
 	}
 
 
+	cout << "from machine " << rank << ": in localToJoin there are " << localToJoin.size() << " relations to join"
+		 << "; localToJoin[0] has size " << localToJoin[0].getSize()
+		 << "; localToJoin[1] has size " << localToJoin[1].getSize() << endl;
 
-	//we see rel as an atom over the variables (x0, x1)
-	Relation locRel01(2);
-	locRel01.setVariables(z01);
-	for (vector<vector<unsigned int> >::iterator it=rel.getBegin(); it!=rel.getEnd(); it++) {
-		if ( h((*it)[0], side, seed[0]) == m[0] && h((*it)[1], side, seed[1]) == m[1] ) {
-			locRel01.addEntry(*it);
-		}
-	}
 
-	//we see rel as an atom over the variables (x1, x2)
-	Relation locRel12(2);
-	locRel12.setVariables(z12);
-	for (vector<vector<unsigned int> >::iterator it=rel.getBegin(); it!=rel.getEnd(); it++) {
-		if ( h((*it)[0], side, seed[1]) == m[1] && h((*it)[1], side, seed[2]) == m[2] ) {
-			locRel12.addEntry(*it);
-		}
-	}
-
-	//we see rel as an atom over the variables (x0, x2)
-	Relation locRel02(2);
-	locRel02.setVariables(z02);
-	for (vector<vector<unsigned int> >::iterator it=rel.getBegin(); it!=rel.getEnd(); it++) {
-		if ( h((*it)[0], side, seed[0]) == m[0] && h((*it)[1], side, seed[2]) == m[2] ) {
-			locRel02.addEntry(*it);
-		}
-	}
-	/*
-	cout << "from machine " << rank << ": locRel01 has size "<< locRel01.getSize() 
-			<< "; locRel12 has size " << locRel12.getSize() 
-			<< "; locRel02 has size " << locRel02.getSize() << endl;
-	*/
-
-	/*----------------------------*/
-	/*---- compute local join ----*/
-	//this will do copies of locRelxy, which is inefficient. for correctness testing we leave it like this for clarity
-	//TODO: change this when testing for performance
-	vector<Relation> toJoin; 
-	toJoin.push_back(locRel01);
-	toJoin.push_back(locRel12);
-	toJoin.push_back(locRel02);
-	Relation localJoin = multiJoin(toJoin);
+	/*---------------------------------*/
+	/*---- compute local multiJoin ----*/
+	Relation localJoin = multiJoin(localToJoin);
 
 	if (localJoin.getArity() != joinArity) {
 		//cout << "Detected logic error on machine " << rank << ":" << endl;
-		//cout << "| locally computed join localJoin.getArity() = " << localJoin.getArity() << endl;
-		//cout << "| since we are computing HyperCube triangle, joinArity should be = 3" << endl;
+		//		<< "| locally computed join localJoin.getArity() = " << localJoin.getArity() << endl;
+		//		<< "| but joinArity should be = " << joinArity << endl;
 		throw logic_error("in hyperCubeTriangle, after computing multiJoin locally, we find that localJoin.getArity() != 3");
 	}
 
-	//cout << "from machine "<<rank << ": localJoin has arity " << localJoin.getArity() << ", and size " << localJoin.getSize() << endl;
+	cout << "from machine "<<rank << ": localJoin has arity " << localJoin.getArity() << ", and size " << localJoin.getSize() << endl;
 
 
-
+	
 	string filepath = "../output/run1/hyperCubetriangle-localJoin-" + to_string(rank) + ".txt";
 	localJoin.writeToFile(filepath.c_str());
-	cout << "*** from machine " << rank << ": localJoin.getSize()=" << localJoin.getSize() << endl;
-
+	
 
 	/*-------------------------------------*/
 	/*---- send back localJoin entries ----*/
@@ -526,16 +501,7 @@ Relation hyperCubeMultiJoin(vector<Relation> toJoin, int root) { //parameter def
 	vector<int> newZ = localJoin.getVariables(); //do a copy
 	output.setVariables(newZ);
 
-	if (rank == root) {
-		//format triangle to avoid repeating entries
-		output.formatTriangle();
-	}
-
-	cout << "from machine " << rank << ": locRel01 has size " << locRel01.getSize()
-		 << "; locRel12 has size " << locRel12.getSize()
-		 << "; locRel02 has size " << locRel02.getSize() << endl;
-	cout << "from machine " << rank << ": localJoin has arity " << localJoin.getArity() << ", and size " << localJoin.getSize() << endl;
-
+	return output;
 }
 
 Relation hyperCubeTriangle(Relation &rel, int root) { //parameter default: root=0
@@ -650,19 +616,18 @@ Relation hyperCubeTriangle(Relation &rel, int root) { //parameter default: root=
 
 	if (localJoin.getArity() != joinArity) {
 		//cout << "Detected logic error on machine " << rank << ":" << endl;
-		//cout << "| locally computed join localJoin.getArity() = " << localJoin.getArity() << endl;
-		//cout << "| since we are computing HyperCube triangle, joinArity should be = 3" << endl;
+		//		<< "| locally computed join localJoin.getArity() = " << localJoin.getArity() << endl;
+		//		<< "| since we are computing HyperCube triangle, joinArity should be = 3" << endl;
 		throw logic_error("in hyperCubeTriangle, after computing multiJoin locally, we find that localJoin.getArity() != 3");
 	}
 
 	//cout << "from machine "<<rank << ": localJoin has arity " << localJoin.getArity() << ", and size " << localJoin.getSize() << endl;
 
 
-
+	/*
 	string filepath = "../output/run1/hyperCubetriangle-localJoin-" + to_string(rank) + ".txt";
 	localJoin.writeToFile(filepath.c_str());
-	cout << "*** from machine " << rank << ": localJoin.getSize()=" << localJoin.getSize() << endl;
-
+	*/
 
 	/*-------------------------------------*/
 	/*---- send back localJoin entries ----*/
@@ -738,11 +703,6 @@ Relation hyperCubeTriangle(Relation &rel, int root) { //parameter default: root=
 		//format triangle to avoid repeating entries
 		output.formatTriangle();
 	}
-
-	cout << "from machine " << rank << ": locRel01 has size " << locRel01.getSize()
-		 << "; locRel12 has size " << locRel12.getSize()
-		 << "; locRel02 has size " << locRel02.getSize() << endl;
-	cout << "from machine " << rank << ": localJoin has arity " << localJoin.getArity() << ", and size " << localJoin.getSize() << endl;
-
+	
 	return output;
 }

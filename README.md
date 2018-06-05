@@ -73,7 +73,7 @@ On a pensé à faire une troisième version, où au lieu d'envoyer des signaux d
 
 ### Remarques
 
-#### list of variables
+#### list of variables - stockage
 
 On a choisi de mettre la donnée de "quelles variables sont stockées dans quelles colonnes de la table" (list of variables) comme attribut `z` de la classe `Relation`.
 
@@ -82,6 +82,24 @@ Cela évite d'avoir à passer la liste des variables à chaque opération où on
 L'inconvénient est que cela complique les opérations de join d'une table sur elle-même, car cela nécessite de connaître les données et les deux listes de variables. La solution naturelle est de faire une copie de la table, de changer la liste de variables de la copie, puis de join les deux tables (l'originale et la copie) ; mais cela suppose de copier toutes les entries de la table... Alors que `join` renvoie lui-même une nouvelle Relation. 
 
 Une autre solution serait d'adapter le code de `join` pour réécrire totalement `autoJoin`, pour diviser par deux l'espace mémoire requis en représentant la "copie" par des permutations sur les entries. Mais c'est compliqué pour un gain faible, d'autant plus que pour presque toutes nos applications, les arités sont de 2 ou 3.
+
+#### list of variables - nature
+
+On n'autorise pas la répétition de variables dans une liste de variables. Par exemple, ceci est illégal : 
+`rel.getVariables() = [0, 1, 1]`.
+ En effet, si `rel` contient une entrée 
+`rel.getEntry(xxx) = [10, 20, 30]`,
+cette entrée signifie que 
+`x0=10, x1=20, x1=20`. 
+Or dans une même valuation ("assignment" dans le sujet) une variable ne peut pas avoir deux valeurs différentes !
+
+En revanche les variables n'ont pas besoin d'être consécutives. On peut tout à fait avoir 
+`rel.getVariables() = [23, 5, 111]`.
+Cela signife simplement que l'entrée
+`rel.getEntry(xxx) = [10, 20, 30]`,
+correspond à un "assignment"
+`x23=10, x5=20, x111=30`. 
+Cela ne pose pas de problème. (D'ailleurs on utilise des variables non-consécutives quand on calcule les triangles : on utilise la liste de variables `[0, 2]`.)
 
 #### debugage avec MPI
 

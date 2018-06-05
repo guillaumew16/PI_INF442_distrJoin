@@ -92,7 +92,7 @@ int main(int argc, char** argv) {
 
     /*--------------------------------------------------------------*/
     /*---- find triangles in a relation using hyperCubeTriangle ----*/
-    
+    /*
     string filePath1;
     // cout << "file describing relation in which we will find triangles:" << endl;
     // cin >> filePath1;
@@ -100,7 +100,42 @@ int main(int argc, char** argv) {
 
     Relation rel(filePath1.c_str(), 2);
     Relation result = hyperCubeTriangle(rel);
-    
+    */
+
+    /*-------------------------------------------------------*/
+    /*---- naive find triangles using hyperCubeMultiJoin ----*/
+
+    Relation rel("../data_head/twitter.dat");
+
+	//it doesn't matter that z[i] is not in range [0, 2] (we assume global indexation of variables v_j)
+	vector<int> z12(2);
+	z12[0]=1;
+	z12[1]=2;
+	vector<int> z23(2);
+	z23[0]=2;
+	z23[1]=3;
+	vector<int> z13(2);
+	z13[0]=1;
+	z13[1]=3;
+	vector<int> z123(3);
+	z123[0]=1;
+	z123[1]=2;
+	z123[2]=3;
+
+	vector<Relation> toJoin;
+    toJoin.push_back(Relation(rel));
+    toJoin.push_back(Relation(rel));
+    toJoin.push_back(Relation(rel));
+    toJoin[0].setVariables(z12);
+    toJoin[1].setVariables(z23);
+    toJoin[2].setVariables(z13);
+
+    Relation result = hyperCubeMultiJoin(toJoin);
+
+	//format triangle to avoid repeating entries
+    if (rank == root) {
+	    result.formatTriangle();
+    }
 
     /*-----------------------*/
     /*---- write to file ----*/

@@ -40,4 +40,4 @@ clean:
 	#rm ../output/*
 
 cleanout:
-	rm ../output/*
+	rm -r ../output/*
