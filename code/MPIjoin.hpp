@@ -12,6 +12,6 @@ Relation MPIautoJoin(Relation &rel, vector<int> &zp, int root=0);
 Relation MPItriangle(Relation &rel, int root=0);
 
 Relation hyperCubeMultiJoin(vector<Relation> toJoin, int root=0);
-Relation hyperCubeTriangle(Relation &rel, int dim=-1, int root=0);
+Relation hyperCubeTriangle(Relation &rel, int root=0);
 
 #endif //MPIJOIN_H

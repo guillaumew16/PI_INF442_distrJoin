@@ -277,6 +277,8 @@ Relation hyperCubeMultiJoin(vector<Relation> toJoin, int root) { //parameter def
 
 	cout << "called hyperCubeMultiJoin, but is not yet tested... "
 			<< "not even finished coding! returning dummy relation" << endl;
+	return Relation(1);
+
 	cout << "Using HyperCube method to compute a multi-way join. We assume MPI was initialized by caller (MPI_Init(...))." << endl;
 
 	int rank, numtasks;
@@ -285,10 +287,258 @@ Relation hyperCubeMultiJoin(vector<Relation> toJoin, int root) { //parameter def
 	if (root >= numtasks)
 		throw invalid_argument("called hyperCubeMultiJoin with a root id >= numtasks");
 
-	return Relation(1);
+	/*--------------------------------------------------------------------------------------------*/
+	/*---- compute set x of ALL variables appearing in the atoms (not just common variables!) ----*/
+	//a smarter way to do this would be to sort all lists of variables and then merge (as in merge sort)
+	//but since in most applications, lists of variables are quite short (typically binary relations)... whatever
+	
+	//we see x as an unordered set
+	vector<int> x;
+	for (vector<Relation>::iterator itRel=toJoin.begin(); itRel!=toJoin.end(); itRel++) {
+		vector<int> z = (*itRel).getVariables();
+		for (int i=0; i<z.size(); i++) {
+			bool found=false;
+			for (int k=0; k<x.size(); k++) { //loop to determine if z[i] is already in x
+				if (z[i] == x[k]) {
+					found = true;
+					break;
+				}
+			}
+			if (!found) { //if not, add to x
+				x.push_back(z[i]);
+			}
+		}
+	}
+
+	/*---------------------------------------------*/
+	/*---- determine side and dim of hypercube ----*/
+	//dim: dimension of hypercube
+	//side: length of a side of hypercube
+	
+	//we use dim=card(x), since we match Relation variables and address variables
+	int dim = x.size();
+	if (dim == 0) {
+		cout << "HyperCube-MultiJoining relations with 0 variables in common. This is equivalent to cartesian product. Just so you know" << endl;
+		cout << "not sure if the equivalent will work in these conditions. run and see" << endl; 
+		//TODO: do the test
+	}
+	
+	//find side s.t side^dim is closest possible to numtasks
+	int side;
+	if (numtasks == 1) {
+		side = 1;
+		cout << "hyperCubeMultiJoin was called with numtasks=1. WTF are you doing o.O?..." << endl;
+	} else {
+		if (numtasks < pow(2, dim))
+			throw logic_error("called hyperCubeTriangle but could not find side>=2 s.t side^dim < numtasks (not really a logic_error but whatever)");
+		side = 2;
+		while (pow(side, dim) <= numtasks) {
+			side ++;
+		}
+		side --;
+	}
+	cout << "running with dim=" << dim << " and side=" << side << "; numtasks=" << numtasks << " and side^dim=" << pow(side, dim) << endl;
+
+	/*----------------------------------------------------------*/
+	/*---- compute processor's address (m1, m2, ..., m_dim) ----*/
+	//if rank = m0_m1_..._m_{dim-1} in base side, then m = [m0, m1, ..., m_{dim-1}]
+	int m[dim];
+	int rankPre; //rank prefix in base side
+	for (int i=dim-1; i>=0; i++) {
+		m[i] = rankPre%side;
+		rankPre = rankPre/side;
+	}
+
+
+	string toPrint = "from machine " + to_string(rank) + ": address array m=";
+	vector<int> mVect(dim);
+	for (int i=0; i<dim; i++) {
+		mVect[i] = m[i];
+	}
+	printVector(mVect, toPrint.c_str());
+	
+
+	/*----------------------------------------------*/
+	/*---- setup seed and other stuff for later ----*/
+
+	//one seed per variable
+	int seed[dim];
+	for (int i=0; i<dim; i++) {
+		seed[i] = 234*i; //whatever, as long as guarantees reproducibility
+	}
+
+	int joinArity = 3;
+	Relation output(joinArity);
+
+	/*----------------------------------------------------------*/
+	/*---- compute which entries this processor should join ----*/
+
+	vector<Relation> localToJoin;
+	localToJoin.reserve(toJoin.size());
+
+	for (vector<Relation>::iterator itRel=toJoin.begin(); itRel!=toJoin.end(); itRel++) {
+		localToJoin.push_back(Relation(itRel->getArity()));
+		localToJoin.back().setVariables(itRel->getVariables());
+
+		for (vector<vector<unsigned int> >::iterator it=itRel->getBegin(); it!=itRel->getEnd(); it++) {
+			//*it is an entry of *itRel
+
+			bool shouldAdd = false; //should we add to localToJoin, i.e. does (*it) match this processor's address on variables itRel->getVariables()
+			for (variable v in it->getVariables) {
+				shouldAdd = shouldAdd && h((*it)[v], side, seed[0]) == m[v]
+				//^-- but with correct conventions for access to variables
+			}
+			//TODO
+
+			if (flag) {
+				localToJoin.back().addEntry(*it);
+			}
+		}
+	}
+
+
+
+	//we see rel as an atom over the variables (x0, x1)
+	Relation locRel01(2);
+	locRel01.setVariables(z01);
+	for (vector<vector<unsigned int> >::iterator it=rel.getBegin(); it!=rel.getEnd(); it++) {
+		if ( h((*it)[0], side, seed[0]) == m[0] && h((*it)[1], side, seed[1]) == m[1] ) {
+			locRel01.addEntry(*it);
+		}
+	}
+
+	//we see rel as an atom over the variables (x1, x2)
+	Relation locRel12(2);
+	locRel12.setVariables(z12);
+	for (vector<vector<unsigned int> >::iterator it=rel.getBegin(); it!=rel.getEnd(); it++) {
+		if ( h((*it)[0], side, seed[1]) == m[1] && h((*it)[1], side, seed[2]) == m[2] ) {
+			locRel12.addEntry(*it);
+		}
+	}
+
+	//we see rel as an atom over the variables (x0, x2)
+	Relation locRel02(2);
+	locRel02.setVariables(z02);
+	for (vector<vector<unsigned int> >::iterator it=rel.getBegin(); it!=rel.getEnd(); it++) {
+		if ( h((*it)[0], side, seed[0]) == m[0] && h((*it)[1], side, seed[2]) == m[2] ) {
+			locRel02.addEntry(*it);
+		}
+	}
+	/*
+	cout << "from machine " << rank << ": locRel01 has size "<< locRel01.getSize() 
+			<< "; locRel12 has size " << locRel12.getSize() 
+			<< "; locRel02 has size " << locRel02.getSize() << endl;
+	*/
+
+	/*----------------------------*/
+	/*---- compute local join ----*/
+	//this will do copies of locRelxy, which is inefficient. for correctness testing we leave it like this for clarity
+	//TODO: change this when testing for performance
+	vector<Relation> toJoin; 
+	toJoin.push_back(locRel01);
+	toJoin.push_back(locRel12);
+	toJoin.push_back(locRel02);
+	Relation localJoin = multiJoin(toJoin);
+
+	if (localJoin.getArity() != joinArity) {
+		//cout << "Detected logic error on machine " << rank << ":" << endl;
+		//cout << "| locally computed join localJoin.getArity() = " << localJoin.getArity() << endl;
+		//cout << "| since we are computing HyperCube triangle, joinArity should be = 3" << endl;
+		throw logic_error("in hyperCubeTriangle, after computing multiJoin locally, we find that localJoin.getArity() != 3");
+	}
+
+	//cout << "from machine "<<rank << ": localJoin has arity " << localJoin.getArity() << ", and size " << localJoin.getSize() << endl;
+
+
+
+	string filepath = "../output/run1/hyperCubetriangle-localJoin-" + to_string(rank) + ".txt";
+	localJoin.writeToFile(filepath.c_str());
+	cout << "*** from machine " << rank << ": localJoin.getSize()=" << localJoin.getSize() << endl;
+
+
+	/*-------------------------------------*/
+	/*---- send back localJoin entries ----*/
+
+	if (rank == root) {
+		//root doesn't Send to itself to avoid deadlock
+		for (vector<vector<unsigned int> >::iterator it = localJoin.getBegin(); it != localJoin.getEnd(); it++) {
+			output.addEntry(*it);
+		}
+	} else {
+		MPI_Request locSendentryReqs[localJoin.getSize()];
+		int n = 0;
+		for (vector<vector<unsigned int> >::iterator it = localJoin.getBegin(); it != localJoin.getEnd(); it++) {
+			//cout << "from machine "<<rank << ": sending an answer entry" << endl;
+			//int m = h((*it)[k], numtasks);
+			unsigned int *toSend = &(*it)[0];
+			//blocking send to make sure all entries are sent before sending "end of answer entries" signal
+			MPI_Isend(toSend, localJoin.getArity(), MPI_UNSIGNED, root, 43, MPI_COMM_WORLD, &locSendentryReqs[n]); //tag 41: "data=answer entry"
+			n++;
+		}
+		MPI_Waitall(n, locSendentryReqs, MPI_STATUSES_IGNORE);
+	}
+
+
+	/*-------------------------------------------------------------------*/
+	/*---- send back dummy message to signal "end of answer entries" ----*/
+	if (rank != root) {
+		//root doesn't send to itself to avoid deadlock
+		MPI_Request locSignalReq;
+		unsigned int dummyValue = 42;
+		MPI_Isend(&dummyValue, 1, MPI_UNSIGNED, root, 53, MPI_COMM_WORLD, &locSignalReq); //tag 53: "signal end of answer entries"
+	}
+	//cout<<"from machine " << rank << ": finished Isending localJoin entries, as well as signal \"end of answer entries\"." << endl;
+
+	//work of non-root processors ends here.
+
+	if (rank == root) {
+		/*------------------------------------------------*/
+		/*---- receive and concatenate answer entries ----*/
+
+		vector<int> nbEntriesRecvd(numtasks, 0);
+
+		MPI_Status status;
+		status.MPI_TAG = 1234;
+		for (int m=0; m<numtasks; m++) {
+			if (m == root) { //root doesn't Send to itself to avoid deadlock
+				continue;
+			}
+			while (status.MPI_TAG != 53) { //tag 53: "signal end of answer entries"
+				vector<unsigned int> recvEntry(joinArity);
+				//blocking receive, so that we continue only when all non-root processors sent "end of answer entries" tag
+				MPI_Recv(&recvEntry[0], joinArity, MPI_UNSIGNED, m, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+				if (status.MPI_TAG == 43) { //tag 43: "data=answer entry"
+					output.addEntry(recvEntry);
+					//printVector(recvEntry, "received answer entry");
+					//cout << "root received answer entry from " << m << endl;
+					nbEntriesRecvd[m] ++;
+				} else if (status.MPI_TAG != 53) {
+					string errMsg = "root received a message with tag " + to_string(status.MPI_TAG) + ", while expecting answer entries (tag 43 or 53)";
+					printVector(recvEntry, errMsg.c_str());
+					throw logic_error(errMsg.c_str());
+				}
+			}
+			cout << "root received \"end of answer entries\" signal from " << m << "; received " << nbEntriesRecvd[m] << " answer entries from it" << endl;
+			status.MPI_TAG = 1234; //any value != 53
+		}
+	}
+
+	vector<int> newZ = localJoin.getVariables(); //do a copy
+	output.setVariables(newZ);
+
+	if (rank == root) {
+		//format triangle to avoid repeating entries
+		output.formatTriangle();
+	}
+
+	cout << "from machine " << rank << ": locRel01 has size " << locRel01.getSize()
+		 << "; locRel12 has size " << locRel12.getSize()
+		 << "; locRel02 has size " << locRel02.getSize() << endl;
+	cout << "from machine " << rank << ": localJoin has arity " << localJoin.getArity() << ", and size " << localJoin.getSize() << endl;
+
 }
 
-Relation hyperCubeTriangle(Relation &rel, int dim, int root) { //parameter default: dim=-1, root=0
+Relation hyperCubeTriangle(Relation &rel, int root) { //parameter default: root=0
 	//tags used:
 	//(unused) 31: number of rel entries to be received
 	//(unused) 32: number of relp entries to be received
@@ -309,59 +559,19 @@ Relation hyperCubeTriangle(Relation &rel, int dim, int root) { //parameter defau
 	if (root >= numtasks)
 		throw invalid_argument("called hyperCubeTriangle with a root id >= numtasks");
 
-	/*----------------------------------------------------------------------------*/
-	/*---- get or guess dim and side (dimension and side length of hypercube) ----*/
-	cout << "we assume that numtasks = m1*m2*...*md with m1=m2=...=md (regular HyperCube, not \"HyperRectangle\")" << endl;
-	
-	int side;
-	//int dim; <-- given in argument
-
-	if (numtasks == 1) {
-		cout << "hyperCubeTriangle was called with numtasks=1. WTF o.O? we will run with side=1, dim=1" << endl;
-		side = 1;
-		dim = 1;
-	} else {
-
-		//find dim and side s.t numtasks = side^dim
-		if (dim > 0) {
-			//user was kind and gave the value of dim. now we get value of side	int side = 1; //the length of a side of the hypercube
-			//if pow throws a warning/error:
-			//https://stackoverflow.com/questions/845912/what-is-the-c-function-to-raise-a-number-to-a-power#845917
-			side = 2;
-			while (pow(side, dim) < numtasks) {
-				side++;
-			}
-			if (numtasks != pow(side, dim))
-				cout << "numtasks=" << numtasks << " and dim=" << dim << ", but numtasks != side^dim for any value of side. Throwing error" << endl;
-				throw logic_error("called hyperCubeTriangle but numtasks is not of the form side^dim (not really a logic_error but whatever)");
-		} else {
-
-			//TODO: check that this is correct. gonna sleep now
-
-			//try to guess value of dim and pow simultaneously...
-			//if several decompositions are possible, we minimize dim
-			dim = 1;
-			side = 2;
-			while (pow(2, dim) < numtasks) { //2 is minimal value of side
-				side = 2;
-				while (pow(side, dim) < numtasks) {
-					side++;
-				}
-				if (pow(side, dim == numtasks) {
-					break;
-				}
-				dim++;
-			}
-
-
-		}
+	cout << "We assume that numtasks = m1 * m2 * m3 with m1=m2=m3 (hypercube of dimension dim=3)" << endl;
+	//int dim = 3; 
+	//we assume dim=3, since there are 3 variables (x0, x1, x2) and we match Relation variables and address variables
+	int side = 1; //the length of a side of the hypercube
+	while (pow(side, 3) < numtasks) {
+		side ++;
 	}
-
-
+	if (numtasks != pow(side, 3))
+		throw logic_error("called hyperCubeTriangle but numtasks is not of the form side^3 (not really a logic_error but whatever)");
 
 	/*----------------------------------------------------------*/
 	/*---- compute processor's address (m1, m2, ..., m_dim) ----*/
-	//we assume dim=3. TODO: remove this comment when we remove this assumption
+	//we assume dim=3, since there are 3 variables (x0, x1, x2) and we match Relation variables and address variables
 	//if rank = m0_m1_m2 in base side, then m = [m0, m1, m2]
 	int m[3];
 	m[2] = rank%side;
@@ -385,6 +595,7 @@ Relation hyperCubeTriangle(Relation &rel, int dim, int root) { //parameter defau
 	z02[0]=0;
 	z02[1]=2;
 
+	//one seed per variable
 	int seed[3];
 	seed[0]=1234;
 	seed[1]=2345;
