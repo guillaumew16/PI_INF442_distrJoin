@@ -12,8 +12,8 @@
 using namespace std;
 
 /*
-int h(unsigned int tohash, int m) {
-	return tohash % m;
+int h(unsigned int tohash, int m, uint32_t seed) { //parameter default: seed=42
+	return (tohash+seed-42) % m;
 }
 */
 
@@ -118,7 +118,7 @@ Relation MPIjoin(Relation &rel, Relation &relp, int root) { //parameter default:
 		}
 	}
 	int joinArity = z.size() + zp.size() - c;
-	cout << "joinArity: " << joinArity << endl;
+	//cout << "joinArity: " << joinArity << endl;
 	Relation output(joinArity);
 
 	if (rank == root) {
@@ -187,7 +187,7 @@ Relation MPIjoin(Relation &rel, Relation &relp, int root) { //parameter default:
 		//Relation rootLocalJoin = join(rootLocalRel, rootLocalRelp, 0); //0 for non-verbose
 		output = join(rootLocalRel, rootLocalRelp, 0); //we would only have copied rootLocalJoin's entries into output anyway
 		
-		cout << "^^^ from root" << rank << ": rootLocalRel.getSize()=" << rootLocalRel.getSize() << "; rootLocalRelp.getSize()=" << rootLocalRelp.getSize() << "; output[for now].getSize()=" << output.getSize() << endl;
+		//cout << "^^^ from root" << rank << ": rootLocalRel.getSize()=" << rootLocalRel.getSize() << "; rootLocalRelp.getSize()=" << rootLocalRelp.getSize() << "; output[for now].getSize()=" << output.getSize() << endl;
 
 		/*-------------------------------------------------------------------------*/
 		/*---- receive and concatenate answer entries from non-root processors ----*/
@@ -255,7 +255,7 @@ Relation MPIjoin(Relation &rel, Relation &relp, int root) { //parameter default:
 		*/
 		Relation localJoin = join(localRel, localRelp, 0); //0 for non-verbose
 
-		cout << "*** from machine " << rank << ": localRel.getSize()=" << localRel.getSize() << "; localRelp.getSize()=" << localRelp.getSize() << "; localJoin.getSize()=" << localJoin.getSize() << endl;
+		//cout << "*** from machine " << rank << ": localRel.getSize()=" << localRel.getSize() << "; localRelp.getSize()=" << localRelp.getSize() << "; localJoin.getSize()=" << localJoin.getSize() << endl;
 
 		/*-------------------------------------*/
 		/*---- send back localJoin entries ----*/
@@ -563,8 +563,8 @@ Relation hyperCubeTriangle(Relation &rel, int root) { //default parameter: root=
 		
 		if (output.getArity() != joinArity) {
 			//cout << "Detected logic error on machine " << rank << ":" << endl;
-			//cout << "| locally computed join localJoin.getArity() = " << localJoin.getArity() << endl;
-			//cout << "| since we are computing HyperCube triangle, joinArity should be = 3" << endl;
+			//		<< "| locally computed join localJoin.getArity() = " << localJoin.getArity() << endl;
+			//		<< "| since we are computing HyperCube triangle, joinArity should be = 3" << endl;
 			throw logic_error("from root: in hyperCubeTriangle, after computing multiJoin locally, we find that rootLocalJoin.getArity() != 3");
 		}
 
@@ -639,8 +639,8 @@ Relation hyperCubeTriangle(Relation &rel, int root) { //default parameter: root=
 		
 		if (localJoin.getArity() != joinArity) {
 			//cout << "Detected logic error on machine " << rank << ":" << endl;
-			//cout << "| locally computed join localJoin.getArity() = " << localJoin.getArity() << endl;
-			//cout << "| since we are computing HyperCube triangle, joinArity should be = 3" << endl;
+			//		<< "| locally computed join localJoin.getArity() = " << localJoin.getArity() << endl;
+			//		<< "| since we are computing HyperCube triangle, joinArity should be = 3" << endl;
 			throw logic_error("in hyperCubeTriangle, after computing multiJoin locally, we find that localJoin.getArity() != 3");
 		}
 

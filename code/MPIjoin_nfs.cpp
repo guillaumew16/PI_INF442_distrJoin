@@ -14,7 +14,7 @@ using namespace std;
 
 /*
 int h(unsigned int tohash, int m, uint32_t seed) { //parameter default: seed=42
-	return (tohash+seed) % m;
+	return (tohash+seed-42) % m;
 }
 */
 
@@ -88,12 +88,12 @@ Relation MPIjoin(Relation &rel, Relation &relp, int root) { //parameter default:
 	int joinArity = z.size() + zp.size() - c;
 	Relation output(joinArity);
 
-	
+	/*
 	if (rank == root) {
 		cout << "we determined z[k] = zp[kp] with k=" << k << " and kp=" << kp << endl;
 		cout << "z[k]: " << z[k] << "; zp[kp]: " << zp[kp] << endl;
 	}
-	
+	*/
 
 	/*----------------------------------------------------------*/
 	/*---- compute which entries this processor should join ----*/
@@ -275,8 +275,8 @@ Relation hyperCubeMultiJoin(vector<Relation> toJoin, int root) { //parameter def
 	//53: signals end of answer entries (from processor status.MPI_SOURCE)
 	//(unused) 20: signals end of MPIjoin (all answers have been received by root)
 
-	cout << "called hyperCubeMultiJoin, but is not finished testing... " << endl;
-	cout << "Using HyperCube method to compute a multi-way join. We assume MPI was initialized by caller (MPI_Init(...))." << endl;
+	cout << "called hyperCubeMultiJoin, but is not finished testing... " << endl
+			<< "Using HyperCube method to compute a multi-way join. We assume MPI was initialized by caller (MPI_Init(...))." << endl;
 
 	int rank, numtasks;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -316,8 +316,8 @@ Relation hyperCubeMultiJoin(vector<Relation> toJoin, int root) { //parameter def
 	//we use dim=card(x), since we match Relation variables and address variables
 	int dim = x.size();
 	if (dim == 0) {
-		cout << "HyperCube-MultiJoining relations with 0 variables in common. This is equivalent to cartesian product. Just so you know" << endl;
-		cout << "not sure if the equivalent will work in these conditions. run and see" << endl; 
+		cout << "HyperCube-MultiJoining relations with 0 variables in common. This is equivalent to cartesian product. Just so you know" << endl
+				<< "not sure if the equivalent will work in these conditions. run and see" << endl; 
 		//TODO: do the test
 	}
 	
@@ -368,11 +368,13 @@ Relation hyperCubeMultiJoin(vector<Relation> toJoin, int root) { //parameter def
 		//seed[x[i]] value doesn't matter, as long as allows reproducibility
 	}
 
+	/*
 	cout << "seed:" << endl;
 	for(map<int, int>::const_iterator it = seed.begin();
     		it != seed.end(); ++it) {
 		cout << it->first << " " << it->second << endl;
 	}
+	*/
 
 	int joinArity = dim; //=tot nb of variables
 	Relation output(joinArity);

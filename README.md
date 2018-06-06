@@ -54,14 +54,14 @@ Pour tester la correction on a également utilisé des troncatures de ces fichie
 
 ### `MPIjoin_nfs.cpp` et `MPIjoin_copydata.cpp`
 
-Ces deux fichiers sont deux implémentaions de task 5, l'une avec le paradigme MPI usuel où on considère que tous les processeurs ont accès aux données (partagées grâce à nfs ou quelque chose comme ça), l'autre où le root copie les données sur le réseau pour les envoyer aux processeurs (en n'envoyant que les données qui le concernent à chaque processeur, bien sûr).
+Ces deux fichiers sont deux implémentaions de task 5 à 8, l'une avec le paradigme MPI usuel où on considère que tous les processeurs ont accès aux données (partagées grâce à nfs ou quelque chose comme ça), l'autre où le root copie les données sur le réseau pour les envoyer aux processeurs (en n'envoyant que les données qui le concernent à chaque processeur, bien sûr).
 
 `MPIjoin_copydata.cpp` passe sur le réseau les données input comme les données output. L'idée est que le processeur root envoie chaque entry au processeur concerné, puis une fois qu'on est sûr que les données ont toutes été reçues, on envoie un signal "fin des données input" aux processeurs (grâce aux "tags" MPI). Puis chaque processeur effectue le join sur ce qu'il a reçu et renvoie le résultat à root
 On n'avait pas réalisé, au moment de faire task 5, que copier les inputs sur le réseau n'était pas nécessaire, d'où cette première version.
 
 `MPIjoin_nfs.cpp` s'appuie donc sur l'hypothèse que les Relations données en arguments sont accessibles par tous les processeurs, donc on n'envoie sur le réseau que les données à output.
 
-Dans le code fourni, `MPIjoin_copydata` et `MPIjoin_nfs` répondent tous deux aux tâches 1 à 6. La tâche 7 n'est pas réalisée (cf infra). La tâche 8 n'est réalisée (pour l'instant) qu'avec la méthode `MPIjoin_nfs`.
+Dans le code fourni, `MPIjoin_copydata` et `MPIjoin_nfs` répondent tous deux aux tâches 5, 6 et 8. La tâche 7 n'est pas réalisée (cf infra). La tâche 8 n'est réalisée que partiellement, on n'a que hyperCubeTriangle (hyperCubeMultiJoin n'est pas implémenté dans l'un et bugué dans l'autre).
 
 Pour changer de méthode, décommenter/recommenter les lignes correspondant à `MPIjoin.o` dans le Makefile. (On a fait le choix de garder le Makefile aussi simple et lisible que possible.)
 
