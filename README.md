@@ -121,6 +121,29 @@ Petite heuristique : quand on débugue un programme qui termine en renvoyant une
 > mpirun -n <NP> xterm -hold -e gdb -ex run --args ./program [arg1] [arg2] [...]
 > ```
 
+### Remarques de la soutenance
+
+Remarques du correcteur. Pas pris en compte dans le code du coup.
+
+- Convertir des vectors en arrays C++ natifs n'est pas évident, la syntaxe `&myVector[0]` utilisable en C++ n'est pas forcément bien interprétée par MPI. (En l'occurrence ça semblait marcher dans les tests effectués.)
+- Lorsqu'on charge des données dans la RAM depuis le disque dur, il faut faire attention à si on le charge dans la pile ou dans le tas.
+  - Pile : taille ~ 1 Mo ; objets explicites (pas de `new`).
+  - Tas : taille ~ 2 Go par processus (total=le reste de la RAM) ; pointeurs et `new`.
+- Pour les deux raisons précédentes, la bonne façon de représenter des tableaux pour MPI est probablement encore des pointeurs, en stockant les dimensions dans des champs séparés de la classe. Par exemple,
+```C++
+class Relation {
+public:
+  /*...*/
+private:
+  int r;
+  int size;
+  unsigned int **entries;
+  int *z;
+}
+```
+- Entre charger les données input seulement pour le root et les envoyer par MPI, et les faire charger par tous les processeurs, les deux se font.
+- MPI boost permet de sérialiser des données pour les envoyer plus facilement avec MPI.
+
 ### License
 
-WTFPL... jk, **ISC**
+**ISC**

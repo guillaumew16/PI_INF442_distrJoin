@@ -19,7 +19,7 @@ public:
 
 	vector<int> getVariables() const; //read-only
 	int getVariable(int i) const; //read-only
-	void setVariables(vector<int> &newZ);
+	void setVariables(const vector<int> newZ);
 
 	vector<vector<unsigned int> > getEntries() const; //read-only
 	vector<unsigned int> getEntry(int i) const;

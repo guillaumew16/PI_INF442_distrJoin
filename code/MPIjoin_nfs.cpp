@@ -12,12 +12,12 @@
 
 using namespace std;
 
-
+/*
 int h(unsigned int tohash, int m, uint32_t seed) { //parameter default: seed=42
 	return (tohash+seed) % m;
 }
+*/
 
-/*
 int h(unsigned int tohash, int m, uint32_t seed) { //parameter default: seed=42
 
 	unsigned int *out = (unsigned int *)malloc(16); //16 bytes = 128 bits
@@ -30,7 +30,6 @@ int h(unsigned int tohash, int m, uint32_t seed) { //parameter default: seed=42
 	//cout << "computed h(" << tohash << "," << m << ") = " << output << endl;
 	return output;
 }
-*/
 
 Relation MPIjoin_fromfiles(const char *filename, const char *filenamep, vector<int> z, vector<int> zp) {
 	Relation rel(filename, z.size());
@@ -307,6 +306,7 @@ Relation hyperCubeMultiJoin(vector<Relation> toJoin, int root) { //parameter def
 			}
 		}
 	}
+	//printVector(x, "vector x of common variables without redundancy");
 
 	/*---------------------------------------------*/
 	/*---- determine side and dim of hypercube ----*/
@@ -368,6 +368,12 @@ Relation hyperCubeMultiJoin(vector<Relation> toJoin, int root) { //parameter def
 		//seed[x[i]] value doesn't matter, as long as allows reproducibility
 	}
 
+	cout << "seed:" << endl;
+	for(map<int, int>::const_iterator it = seed.begin();
+    		it != seed.end(); ++it) {
+		cout << it->first << " " << it->second << endl;
+	}
+
 	int joinArity = dim; //=tot nb of variables
 	Relation output(joinArity);
 
@@ -378,11 +384,11 @@ Relation hyperCubeMultiJoin(vector<Relation> toJoin, int root) { //parameter def
 	localToJoin.reserve(toJoin.size());
 	//we keep all relations, even those with no entry to be treated by current processor. so we will always end up with toJoin.size() relations to join, some of which may be empty
 	//*it is not correct* to just forget the local relations with no entry.
+	//if there is an empty relation in localToJoin, then the result of any multiway join will be empty relation (no assignment satisfies empty relation)
 
 	for (vector<Relation>::iterator itRel=toJoin.begin(); itRel!=toJoin.end(); itRel++) {
 		localToJoin.push_back(Relation(itRel->getArity())); //we keep all relations, even those with no entry to be treated by current processor.
-		vector<int> itRelZ = itRel->getVariables(); //must do a copy because of consts
-		localToJoin.back().setVariables(itRelZ);
+		localToJoin.back().setVariables(itRel->getVariables());
 
 		for (vector<vector<unsigned int> >::iterator it=itRel->getBegin(); it!=itRel->getEnd(); it++) {
 			//*it is an entry of *itRel
@@ -394,7 +400,7 @@ Relation hyperCubeMultiJoin(vector<Relation> toJoin, int root) { //parameter def
 				int zi = itRel->getVariable(i);
 				//the value corresponding to the variable zi in the entry *it is (*it)[i]
 				//the seed corresponding to the variable zi is seed[zi] (seed is a map!)
-				if (h((*it)[i], side, seed[zi]) != m[zi]) {
+				if (h((*it)[i], side, seed.at(zi)) != m[zi]) {
 					shouldAdd = false;
 					break;
 				}
@@ -407,10 +413,10 @@ Relation hyperCubeMultiJoin(vector<Relation> toJoin, int root) { //parameter def
 	}
 
 
-	cout << "from machine " << rank << ": in localToJoin there are " << localToJoin.size() << " relations to join"
+	cout << "from machine " << rank //<< ": in localToJoin there are " << localToJoin.size() << " relations to join"
 		 << "; localToJoin[0] has size " << localToJoin[0].getSize()
-		 << "; localToJoin[1] has size " << localToJoin[1].getSize() << endl;
-
+		 << "; localToJoin[1] has size " << localToJoin[1].getSize()
+		 << "; localToJoin[2] has size " << localToJoin[2].getSize() << endl;
 
 	/*---------------------------------*/
 	/*---- compute local multiJoin ----*/
@@ -427,7 +433,7 @@ Relation hyperCubeMultiJoin(vector<Relation> toJoin, int root) { //parameter def
 
 
 	
-	string filepath = "../output/run1/hyperCubetriangle-localJoin-" + to_string(rank) + ".txt";
+	string filepath = "../output/run2/hyperCubetriangle-localJoin-" + to_string(rank) + ".txt";
 	localJoin.writeToFile(filepath.c_str());
 	
 
@@ -563,9 +569,9 @@ Relation hyperCubeTriangle(Relation &rel, int root) { //parameter default: root=
 
 	//one seed per variable
 	int seed[3];
-	seed[0]=1234;
-	seed[1]=2345;
-	seed[2]=3456;
+	seed[0]=234;//1234;
+	seed[1]=468;//2345;
+	seed[2]=702;//3456;
 
 	int joinArity = 3;
 	Relation output(joinArity);
@@ -598,11 +604,12 @@ Relation hyperCubeTriangle(Relation &rel, int root) { //parameter default: root=
 			locRel02.addEntry(*it);
 		}
 	}
-	/*
-	cout << "from machine " << rank << ": locRel01 has size "<< locRel01.getSize() 
+	
+	cout << "from machine " << rank 
+			<< ": locRel01 has size "<< locRel01.getSize() 
 			<< "; locRel12 has size " << locRel12.getSize() 
 			<< "; locRel02 has size " << locRel02.getSize() << endl;
-	*/
+	
 
 	/*----------------------------*/
 	/*---- compute local join ----*/
@@ -624,10 +631,10 @@ Relation hyperCubeTriangle(Relation &rel, int root) { //parameter default: root=
 	//cout << "from machine "<<rank << ": localJoin has arity " << localJoin.getArity() << ", and size " << localJoin.getSize() << endl;
 
 
-	/*
+	
 	string filepath = "../output/run1/hyperCubetriangle-localJoin-" + to_string(rank) + ".txt";
 	localJoin.writeToFile(filepath.c_str());
-	*/
+	
 
 	/*-------------------------------------*/
 	/*---- send back localJoin entries ----*/

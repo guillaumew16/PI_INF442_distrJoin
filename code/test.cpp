@@ -83,6 +83,33 @@ int main(int argc, char** argv) {
 	Relation result = triangle(twitterRel);
 	
 
+    /*----------------------------------------------*/
+    /*---- naive find triangles using multiJoin ----*/
+	/*
+	//it doesn't matter that z[i] is not in range [0, 2] (we assume global indexation of variables v_j)
+	vector<int> z12(2);
+	z12[0]=1;
+	z12[1]=2;
+	vector<int> z23(2);
+	z23[0]=2;
+	z23[1]=3;
+	vector<int> z13(2);
+	z13[0]=1;
+	z13[1]=3;
+
+	vector<Relation> toJoin;
+    toJoin.push_back(Relation(twitterRel));
+	toJoin.push_back(Relation(twitterRel));
+	toJoin.push_back(Relation(twitterRel));
+	toJoin[0].setVariables(z12);
+    toJoin[1].setVariables(z23);
+    toJoin[2].setVariables(z13);
+
+    Relation result = multiJoin(toJoin);
+
+	//format triangle to avoid repeating entries
+	result.formatTriangle();
+*/
 	/*-----------------------*/
 	/*---- write to file ----*/
 

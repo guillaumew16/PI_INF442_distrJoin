@@ -104,7 +104,7 @@ int main(int argc, char** argv) {
 
     /*-------------------------------------------------------*/
     /*---- naive find triangles using hyperCubeMultiJoin ----*/
-
+    
     Relation rel("../data_head/twitter.dat");
 
 	//it doesn't matter that z[i] is not in range [0, 2] (we assume global indexation of variables v_j)
@@ -117,10 +117,6 @@ int main(int argc, char** argv) {
 	vector<int> z13(2);
 	z13[0]=1;
 	z13[1]=3;
-	vector<int> z123(3);
-	z123[0]=1;
-	z123[1]=2;
-	z123[2]=3;
 
 	vector<Relation> toJoin;
     toJoin.push_back(Relation(rel));
@@ -136,7 +132,7 @@ int main(int argc, char** argv) {
     if (rank == root) {
 	    result.formatTriangle();
     }
-
+    
     /*-----------------------*/
     /*---- write to file ----*/
 

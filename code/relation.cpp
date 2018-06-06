@@ -134,7 +134,7 @@ int Relation::getVariable(int i) const {
 	return z[i];
 }
 
-void Relation::setVariables(vector<int> &newZ) {
+void Relation::setVariables(const vector<int> newZ) {
 	if (newZ.size() != this->r)
 		throw invalid_argument("tried to set z (list of variables) to a vector of size != r");
 
